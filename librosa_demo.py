@@ -93,7 +93,7 @@ def pitch_plot(pitches):
 	        if window_len<3:
 	                return x
 	        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-	                raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+	                raise ValueError, "Window is one of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
 	        s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
 	        if window == 'flat': #moving average
 	                w=np.ones(window_len,'d')
@@ -102,16 +102,13 @@ def pitch_plot(pitches):
 	        y=np.convolve(w/w.sum(),s,mode='same')
 	        return y[window_len:-window_len+1]
 
-	def extract_max_plot(pitches, shape):
+	def extract_max_plot(pitches):
 	    new_pitches = []
-	    for i in range(0, shape[1]):
+	    for i in range(0, np.shape(pitches)[1]):
 	        new_pitches.append(np.max(pitches[:,i]))
 	    return new_pitches
 
-
-	shape = np.shape(pitches)
-
-	pitches = extract_max_plot(pitches, shape)
+	pitches = extract_max_plot(pitches)
 
 	pitches1 = smooth(pitches,window_len=10)
 	pitches2 = smooth(pitches,window_len=20)
