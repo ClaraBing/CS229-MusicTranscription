@@ -72,32 +72,6 @@ def baseline_tracking(audio_file, result_file=None):
 
 	return pitches, ret_pitch
 
-def plot(vector, name, xlabel=None, ylabel=None):
-    plt.figure()
-    plt.plot(vector)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.plot()
-    plt.savefig('pitch_plots/'+name)
-
-def smooth(x,window_len=11,window='hanning'):
-        if window_len<3:
-                return x
-        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-                raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
-        s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
-        if window == 'flat': #moving average
-                w=np.ones(window_len,'d')
-        else:
-                w=eval('np.'+window+'(window_len)')
-        y=np.convolve(w/w.sum(),s,mode='same')
-        return y[window_len:-window_len+1]
-
-def extract_max_plot(pitches, shape):
-    new_pitches = []
-    for i in range(0, shape[1]):
-        new_pitches.append(np.max(pitches[:,i]))
-    return new_pitches
 
 def pitch_plot(pitches):
 	# Xiaoyan: please modify this function
@@ -106,6 +80,36 @@ def pitch_plot(pitches):
 	# 	x.extend([i] * len(notes_grp))
 	# 	y.extend(notes_grp)
 	# plt.plot(x, y, label='time step (x) vs frequency (y)')
+
+
+	def plot(vector, name, xlabel=None, ylabel=None):
+	    plt.figure()
+	    plt.plot(vector)
+	    plt.xlabel(xlabel)
+	    plt.ylabel(ylabel)
+	    plt.plot()
+	    plt.savefig('pitch_plots/'+name)
+
+	def smooth(x,window_len=11,window='hanning'):
+	        if window_len<3:
+	                return x
+	        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+	                raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+	        s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
+	        if window == 'flat': #moving average
+	                w=np.ones(window_len,'d')
+	        else:
+	                w=eval('np.'+window+'(window_len)')
+	        y=np.convolve(w/w.sum(),s,mode='same')
+	        return y[window_len:-window_len+1]
+
+	def extract_max_plot(pitches, shape):
+	    new_pitches = []
+	    for i in range(0, shape[1]):
+	        new_pitches.append(np.max(pitches[:,i]))
+	    return new_pitches
+
+    
 	shape = np.shape(pitches)
 
 	pitches = extract_max_plot(pitches, shape)
