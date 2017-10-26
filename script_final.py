@@ -87,7 +87,7 @@ def main():
 
     # y = audio time series
     # sr = sampling rate of y
-    y, sr = librosa.load('./0.wav', sr=sample_f, duration=duration)
+    y, sr = librosa.load('data/Audio/LizNelson_Rainfall/LizNelson_Rainfall_MIX.wav', sr=sample_f, duration=duration)
     #y1, sr1 = librosa.load('./1', sr=sample_f, duration=duration)
 
     analyse(y, sr, n_fft, hop_length, fmin, fmax)
