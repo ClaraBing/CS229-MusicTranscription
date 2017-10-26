@@ -7,7 +7,9 @@ import time
 debug = False
 
 start = time.clock()
-audio_file = 'data/Audio/LizNelson_Rainfall/LizNelson_Rainfall_MIX.wav'
+audio_name = 'LizNelson_Rainfall_MIX'
+audio_file = 'data/Audio/LizNelson_Rainfall/' + audio_name + '.wav'
+result_file = 'data/' + audio_name + '.txt'
 y, sr = librosa.load(audio_file)
 print('Audio file loaded: ' + audio_file)
 print('{:f}s for loading the audio file.'.format(time.clock()-start))
@@ -24,6 +26,7 @@ print(magnitudes.shape)
 d_range, time_range = pitches.shape
 mag_thresh = 2*np.mean(magnitudes)/3
 # print out tracked notes over time
+file = open(result_file,'w+')
 for t in range(time_range):
 	# filter out frequencies with zero value
 	pitch_t = pitches[:,t]
@@ -44,7 +47,8 @@ for t in range(time_range):
 
 	pitch_t = pitch_t[np.logical_and(pitch_idx, mag_idx)]
 	# only print at a time t if there're notes present
-	if len(pitch_t):
-		print(t)
-		print(pitch_t)
-		print()
+	for pitch in pitch_t:
+		file.write(str(t)+ ',' + str(pitch)+'\n')
+
+print("Saved in " + result_file)
+file.close()
