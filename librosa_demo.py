@@ -51,14 +51,13 @@ def baseline_tracking(audio_file, result_file=None):
 			ret_pitch += pitch_t,
 			if result_file:
 				for pitch in pitch_t:
-					#file.write(str(t)+ ',' + str(pitch)+'\n')
-					a = 1
+					file.write(str(t)+ ',' + str(pitch)+'\n')
 			else:
 				print(t)
 				print(pitch_t)
 				print()
-	# print("Saved in " + result_file)
-	# file.close()
+	print("Saved in " + result_file)
+	file.close()
 
 	print("Stat:")
 	print('{:f}s for piptrack'.format(time.clock()-start))
@@ -109,7 +108,7 @@ def pitch_plot(pitches):
 	        new_pitches.append(np.max(pitches[:,i]))
 	    return new_pitches
 
-    
+
 	shape = np.shape(pitches)
 
 	pitches = extract_max_plot(pitches, shape)
