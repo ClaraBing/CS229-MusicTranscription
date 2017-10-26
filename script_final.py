@@ -6,8 +6,6 @@ import librosa
 import numpy
 import matplotlib.pylab as plt
 
-
-
 def extract_max(pitches,magnitudes, shape):
     new_pitches = []
     new_magnitudes = []
