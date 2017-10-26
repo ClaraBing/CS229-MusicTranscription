@@ -64,6 +64,7 @@ def analyse(y,sr,n_fft,hop_length,fmin,fmax):
     plot(pitches2, 'pitches2')
     plot(pitches3, 'pitches3')
     plot(pitches4, 'pitches4')
+    plot(pitches, 'pitches')
     plot(magnitudes, 'magnitudes')
     plot( y, 'audio')
 
