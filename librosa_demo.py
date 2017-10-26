@@ -13,8 +13,7 @@ def main():
 	audio_file = 'data/Audio/LizNelson_Rainfall/' + audio_name + '.wav'
 	result_file = 'data/' + audio_name + '.csv'
 	raw_pitch, processed_pitch = baseline_tracking(audio_file, result_file)
-	pitch_plot(raw_pitch) # pass in input as needed
-
+	pitch_plot(processed_pitch) # pass in input as needed
 
 def extract_pitch_max(pitches, magnitudes, timerange):
 	new_pitches = []
@@ -93,7 +92,6 @@ def pitch_plot(pitches):
 	# 	y.extend(notes_grp)
 	# plt.plot(x, y, label='time step (x) vs frequency (y)')
 
-
 	def plot(vector, name, xlabel=None, ylabel=None):
 	    plt.figure()
 	    plt.plot(vector)
@@ -115,16 +113,7 @@ def pitch_plot(pitches):
 	        y=np.convolve(w/w.sum(),s,mode='same')
 	        return y[window_len:-window_len+1]
 
-	def extract_max_plot(pitches, shape):
-	    new_pitches = []
-	    for i in range(0, shape[1]):
-	        new_pitches.append(np.max(pitches[:,i]))
-	    return new_pitches
-
-
 	shape = np.shape(pitches)
-
-	pitches = extract_max_plot(pitches, shape)
 
 	pitches1 = smooth(pitches,window_len=10)
 	pitches2 = smooth(pitches,window_len=20)
