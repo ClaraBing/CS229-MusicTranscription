@@ -4,7 +4,8 @@ import numpy as np
 import librosa
 import time
 
-# y, sr = librosa.load(librosa.util.example_audio_file(), duration=5.0)
+debug = False
+
 start = time.clock()
 audio_file = 'LizNelson_Rainfall_MIX.wav'
 y, sr = librosa.load(audio_file)
@@ -17,14 +18,33 @@ print('{:f}s for piptrack'.format(time.clock()-start))
 print("len(pitches): {:d}".format(len(pitches)))
 print("pitch shape:")
 print(pitches.shape)
+print("magnitudes shape:")
+print(magnitudes.shape)
+
 d_range, time_range = pitches.shape
+mag_thresh = 2*np.mean(magnitudes)/3
+# print out tracked notes over time
 for t in range(time_range):
+	# filter out frequencies with zero value
 	pitch_t = pitches[:,t]
-	pitch_t = at_t[np.nonzero(pitch_t)]
-	print(t)
-	print(pitch_t)
-	print()
-# print(any(pitches))
-print('\n\nlen(magnitudes): {:d}'.format(len(magnitudes)))
-# print(any(magnitudes))
-# print(magnitudes)
+	pitch_idx = pitch_t!=0
+	# filter out notes that are too weak
+	mag_t = magnitudes[:,t]
+	mag_idx = mag_t>mag_thresh
+	# apply both filters
+	merged_idx = np.logical_and(pitch_idx, mag_idx)
+
+	if debug:
+		print("pitch_idx shape:")
+		print(pitch_idx.shape)
+		print("mag_idx shape:")
+		print(mag_idx.shape)
+		print("idx shape:")
+		print(merged_idx.shape)
+	
+	pitch_t = pitch_t[np.logical_and(pitch_idx, mag_idx)]
+	# only print at a time t if there're notes present
+	if len(pitch_t):
+		print(t)
+		print(pitch_t)
+		print()
