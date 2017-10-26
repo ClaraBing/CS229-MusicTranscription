@@ -79,4 +79,39 @@ def pitch_plot(pitches):
 	# 	y.extend(notes_grp)
 	# plt.plot(x, y, label='time step (x) vs frequency (y)')
 
+def get_err(gt, pred):
+	# Normalize time
+	# find the number of time intervals
+	gt_interval = []
+	curr_interval = -1.000
+	for i in range(len(gt)):
+		gt[i][0] = round(gt[i][0], 3) # precision = miliseconds
+		if gt[i][0] == curr_interval:
+			gt_interval[-1] += gt[i][1],
+		else:
+			if gt[i][0] - curr_interval != 0.001:
+				# if skipping over some intervals -> put placeholdes
+				n_diff = (gt[i][0]-curr_interval) / 0.001
+				for i in range(n_diff):
+					gt_interval += [0],
+					curr_interval += 0.001
+			gt_interval += [gt[i][1]],
+			curr_interval = gt[i][0]
+	interval_cnt = len(gt_interval)
+	# normalize pitch time
+	step = int(len(pred)/interval_cnt)
+	pred_interval_avg = []
+	gt_interval_avg = []
+	for i in range(interval_cnt):
+		pred_notes = [note for notes in pred[i*step:(i+1)*step] for note in notes]
+		if pred_notes == []:
+			pred += 0,
+		else:
+			pred += sum(pred_notes) / len(pred_notes),
+		gt_interval_avg += sum(gt_interval[i]) / len(gt_interval[i])
+	if len(pred_interval_avg) != len(gt_interval_avg):
+		raise ValueError("Ground truth & prediction dimension mismatch")
+	err = sum((x-y)**2 for (x,y) in zip(pred_interval_avg, gt_interval_avg)) / len(pred_interval_avg)
+	return err
+
 main()
