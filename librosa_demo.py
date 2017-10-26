@@ -7,7 +7,7 @@ import time
 debug = False
 
 start = time.clock()
-audio_file = 'LizNelson_Rainfall_MIX.wav'
+audio_file = 'data/Audio/LizNelson_Rainfall/LizNelson_Rainfall_MIX.wav'
 y, sr = librosa.load(audio_file)
 print('Audio file loaded: ' + audio_file)
 print('{:f}s for loading the audio file.'.format(time.clock()-start))
@@ -41,7 +41,7 @@ for t in range(time_range):
 		print(mag_idx.shape)
 		print("idx shape:")
 		print(merged_idx.shape)
-	
+
 	pitch_t = pitch_t[np.logical_and(pitch_idx, mag_idx)]
 	# only print at a time t if there're notes present
 	if len(pitch_t):
