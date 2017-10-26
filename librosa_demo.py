@@ -11,7 +11,7 @@ database_sr = 44100
 def main():
 	audio_name = 'LizNelson_Rainfall_MIX'
 	audio_file = 'data/Audio/LizNelson_Rainfall/' + audio_name + '.wav'
-	result_file = 'data/' + audio_name + '.txt'
+	result_file = 'data/' + audio_name + '.csv'
 	raw_pitch, processed_pitch = baseline_tracking(audio_file, result_file)
 	pitch_plot(raw_pitch) # pass in input as needed
 
