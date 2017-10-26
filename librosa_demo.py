@@ -17,8 +17,14 @@ print('{:f}s for piptrack'.format(time.clock()-start))
 print("len(pitches): {:d}".format(len(pitches)))
 print("pitch shape:")
 print(pitches.shape)
-print(any(pitches))
-# print(pitches)
+d_range, time_range = pitches.shape
+for t in range(time_range):
+	pitch_t = pitches[:,t]
+	pitch_t = at_t[np.nonzero(pitch_t)]
+	print(t)
+	print(pitch_t)
+	print()
+# print(any(pitches))
 print('\n\nlen(magnitudes): {:d}'.format(len(magnitudes)))
-print(any(magnitudes))
+# print(any(magnitudes))
 # print(magnitudes)
