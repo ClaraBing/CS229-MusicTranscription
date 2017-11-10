@@ -1,10 +1,8 @@
-import matplotlib
 # import IPython.display
-import numpy as np
 import librosa
 import time
-import matplotlib.pylab as plt
-
+import util
+import numpy as np
 debug = False
 database_sr = 44100
 
@@ -13,17 +11,7 @@ def main():
 	audio_file = 'data/Audio/LizNelson_Rainfall/' + audio_name + '.wav'
 	result_file = 'data/' + audio_name + '.csv'
 	raw_pitch, processed_pitch = baseline_tracking(audio_file, result_file)
-	pitch_plot(processed_pitch) # pass in input as needed
-
-def extract_pitch_max(pitches, magnitudes, timerange):
-	new_pitches = []
-	new_magnitudes = []
-	for i in range(timerange):
-		maxMagn = max(magnitudes[:,i])
-		index = np.argmax(magnitudes[:,i])
-		new_pitches.append(pitches[index,i])
-		new_magnitudes.append(maxMagn)
-	return (new_pitches,new_magnitudes)
+	util.plot(processed_pitch, audio_name) # pass in input as needed
 
 # Takes input file and result file
 # Outputs raw pitches from the input file,
@@ -40,7 +28,7 @@ def baseline_tracking(audio_file, result_file=None):
 	mag_thresh = 2*np.mean(magnitudes)/3
 	d_range, time_range = pitches.shape
 	pitches_max, magnitudes_max = \
-		extract_pitch_max(pitches, magnitudes, time_range)
+		util.extract_pitch_max(pitches, magnitudes, time_range)
 	ret_pitch = []
 	if result_file:
 		file = open(result_file, 'w+')
@@ -83,38 +71,8 @@ def baseline_tracking(audio_file, result_file=None):
 
 	return pitches, ret_pitch
 
-def plot(vector, name, xlabel=None, ylabel=None):
-    plt.figure()
-    plt.plot(vector)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.plot()
-    plt.savefig('pitch_plots/'+name)
-
-def smooth(x,window_len=11,window='hanning'):
-        if window_len<3:
-                return x
-        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-                raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
-        s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
-        if window == 'flat': #moving average
-                w=np.ones(window_len,'d')
-        else:
-                w=eval('np.'+window+'(window_len)')
-        y=np.convolve(w/w.sum(),s,mode='same')
-        return y[window_len:-window_len+1]
-
-def extract_max_plot(pitches, shape):
-    new_pitches = []
-    for i in range(0, shape[1]):
-        new_pitches.append(np.max(pitches[:,i]))
-    return new_pitches
-
-def load_txt(f_name):
-	fin = open(f_name, 'r')
-	return [line.strip().split(',') for line in fin.readlines()]
-
-def get_err(gt, pred):
+##Get error metric between prediciton and ground truth
+def evaluation_error(gt, pred):
 	# Normalize time
 	# find the number of time intervals
 	gt_interval = []
