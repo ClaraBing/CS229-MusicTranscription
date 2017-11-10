@@ -83,35 +83,71 @@ def baseline_tracking(audio_file, result_file=None):
 
 	return pitches, ret_pitch
 
+def plot(vector, name, xlabel=None, ylabel=None):
+    plt.figure()
+    plt.plot(vector)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.plot()
+    plt.savefig('pitch_plots/'+name)
 
-def pitch_plot(pitches):
-	# Xiaoyan: please modify this function
-	# x, y = [], []
-	# for i, notes_grp in enumerate(pitches):
-	# 	x.extend([i] * len(notes_grp))
-	# 	y.extend(notes_grp)
-	# plt.plot(x, y, label='time step (x) vs frequency (y)')
+def smooth(x,window_len=11,window='hanning'):
+        if window_len<3:
+                return x
+        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+                raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+        s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
+        if window == 'flat': #moving average
+                w=np.ones(window_len,'d')
+        else:
+                w=eval('np.'+window+'(window_len)')
+        y=np.convolve(w/w.sum(),s,mode='same')
+        return y[window_len:-window_len+1]
 
-	def plot(vector, name, xlabel=None, ylabel=None):
-	    plt.figure()
-	    plt.plot(vector)
-	    plt.xlabel(xlabel)
-	    plt.ylabel(ylabel)
-	    plt.plot()
-	    plt.savefig('pitch_plots/'+name)
+def extract_max_plot(pitches, shape):
+    new_pitches = []
+    for i in range(0, shape[1]):
+        new_pitches.append(np.max(pitches[:,i]))
+    return new_pitches
 
-	def smooth(x,window_len=11,window='hanning'):
-	        if window_len<3:
-	                return x
-	        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-	                raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
-	        s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
-	        if window == 'flat': #moving average
-	                w=np.ones(window_len,'d')
-	        else:
-	                w=eval('np.'+window+'(window_len)')
-	        y=np.convolve(w/w.sum(),s,mode='same')
-	        return y[window_len:-window_len+1]
+def load_txt(f_name):
+	fin = open(f_name, 'r')
+	return [line.strip().split(',') for line in fin.readlines()]
+
+def get_err(gt, pred):
+	# Normalize time
+	# find the number of time intervals
+	gt_interval = []
+	curr_interval = -1.000
+	for i in range(len(gt)):
+		gt[i][0] = round(gt[i][0], 3) # precision = miliseconds
+		if gt[i][0] == curr_interval:
+			gt_interval[-1] += gt[i][1],
+		else:
+			if gt[i][0] - curr_interval != 0.001:
+				# if skipping over some intervals -> put placeholdes
+				n_diff = (gt[i][0]-curr_interval) / 0.001
+				for i in range(n_diff):
+					gt_interval += [0],
+					curr_interval += 0.001
+			gt_interval += [gt[i][1]],
+			curr_interval = gt[i][0]
+	interval_cnt = len(gt_interval)
+	# normalize pitch time
+	step = int(len(pred)/interval_cnt)
+	pred_interval_avg = []
+	gt_interval_avg = []
+	for i in range(interval_cnt):
+		pred_notes = [note for notes in pred[i*step:(i+1)*step] for note in notes]
+		if pred_notes == []:
+			pred += 0,
+		else:
+			pred += sum(pred_notes) / len(pred_notes),
+		gt_interval_avg += sum(gt_interval[i]) / len(gt_interval[i])
+	if len(pred_interval_avg) != len(gt_interval_avg):
+		raise ValueError("Ground truth & prediction dimension mismatch")
+	err = sum((x-y)**2 for (x,y) in zip(pred_interval_avg, gt_interval_avg)) / len(pred_interval_avg)
+	return err
 
 	shape = np.shape(pitches)
 
