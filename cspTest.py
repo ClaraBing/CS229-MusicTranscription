@@ -21,7 +21,9 @@ def construction_test():
     for i in range(4)
     ]
     flat_pitch.setRange(range(1, 11))
+
     flat_pitch.setNotes(N, K, probabilities, frequencies, variances)
+
     flat_pitch.solve()
     flat_pitch.print_solution()
 

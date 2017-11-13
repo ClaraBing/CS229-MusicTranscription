@@ -4,7 +4,7 @@ import numpy as np
 # Input: N number of notes,
 # frequencies: array of size N with frequencies in Hz
 # output_name: name of the file to be saved
-# duration of each notes in s. 
+# duration of each notes in s.
 def outputMIDI(N, frequencies, output_name,  duration = 1):
     # Creates a MIDI file with one track
     MyMIDI = MIDIFile(1)
@@ -17,7 +17,7 @@ def outputMIDI(N, frequencies, output_name,  duration = 1):
         MyMIDI.addNote(track, 0, midiNote, time, duration, 100)
         time += duration
 
-    binfile = open(output_name+ ".mid", 'wb')
+    binfile = open("midiOutput/"+ output_name + ".mid", 'wb')
     MyMIDI.writeFile(binfile)
     binfile.close()
 
