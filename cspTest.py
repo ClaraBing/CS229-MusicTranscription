@@ -1,5 +1,4 @@
-from csp import PitchContour, BacktrackingSearch
-
+from pitch_contour import PitchContour
 def construction_test():
     flat_pitch = PitchContour()
     K = 2
