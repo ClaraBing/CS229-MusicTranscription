@@ -170,10 +170,12 @@ class PitchContour(CSP):
         for i in range(N):
             self.add_variable(i, self.range)
             self.add_unary_factor(i, \
-                lambda v : gaussianMixtureModelDistribution(v, K, probabilities[i], frequencies[i], variances[i]))
+                lambda v : gaussianMixtureModelDistribution(v, K, \
+                    probabilities[i], frequencies[i], variances[i]))
             if i > 0:
                 self.add_binary_factor(i, i-1, \
-                    lambda vafter, vbefore: laplaceDistribution(abs(vafter-vbefore)))
+                    lambda vafter, vbefore: laplaceDistribution(\
+                        abs(1.0 / vafter- 1.0 / vbefore)) if vafter > 0 and vbefore > 0 else 1.0)
 
     def solve(self):
         search = BacktrackingSearch()

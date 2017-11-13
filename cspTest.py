@@ -6,7 +6,7 @@ def construction_test():
     N = 4
     frequencies = [
     [9, 10],
-    [0, 9],
+    [1, 9],
     [1, 8],
     [5, 7]
     ]
@@ -20,7 +20,7 @@ def construction_test():
     [0.01 for i in range(3)]
     for i in range(4)
     ]
-    flat_pitch.setRange(range(11))
+    flat_pitch.setRange(range(1, 11))
     flat_pitch.setNotes(N, K, probabilities, frequencies, variances)
     flat_pitch.solve()
     flat_pitch.print_solution()
