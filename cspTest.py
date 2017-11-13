@@ -1,4 +1,5 @@
 from pitch_contour import PitchContour
+
 def construction_test():
     flat_pitch = PitchContour()
     K = 2
