@@ -33,6 +33,11 @@ def transition_probability(fbefore, fafter):
     else:
         return 1.0
 
+# Generate the range of frequencies using formula
+# f_n = f_0 * \sqrt[12]{2}^n
+def generateFrequency(n = 57, base = 440.0):
+    return [base * math.pow(2.0, i / 12.0) for i in range(-n, n + 1)]
+
 class PitchContour(CSP):
     def __init__(self):
         super(PitchContour, self).__init__()

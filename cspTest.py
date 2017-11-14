@@ -1,13 +1,17 @@
 import unittest
 
-from pitch_contour import PitchContour, trainTransition
+from pitch_contour import PitchContour, trainTransition, generateFrequency
 
 class PitchContourTest(unittest.TestCase):
+
+    def test_freq(self):
+        frequencies = generateFrequency()
+        self.assertEqual(frequencies[57], 440.0)
+        self.assertEqual(round(frequencies[0]), 16)
 
     def test_training(self):
         data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
         probabilities = trainTransition(data, range(5))
-        print probabilities
         # Verify that all probabilities sum to 1.
         for i in range(5):
             count = 0
