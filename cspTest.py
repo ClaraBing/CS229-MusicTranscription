@@ -45,6 +45,34 @@ class PitchContourTest(unittest.TestCase):
         solution = {0 : 10, 1: 9, 2: 8, 3: 7}
         self.assertTrue(solution == solutionCSP)
 
+    def test_both(self):
+        data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
+        transition = trainTransition(data, range(5))
+        pitch = PitchContour()
+        K = 2
+        N = 4
+        frequencies = [
+        [1, 4],
+        [2, 3],
+        [3, 1],
+        [2, 4]
+        ]
+        probabilities = [
+        [0.9, 0.1],
+        [0.5, 0.5],
+        [0.45, 0.55],
+        [1, 0]
+        ]
+        variances = [
+        [0.01 for i in range(3)]
+        for i in range(4)
+        ]
+        pitch.setRange(range(5))
+        pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
+        pitch.setNotes(N, K, probabilities, frequencies, variances)
+        solutionCSP = pitch.solve()
+        solution = {0 : 1, 1: 2, 2: 3, 3: 2}
+        self.assertTrue(solution == solutionCSP)
 
 if __name__ == '__main__':
     unittest.main()
