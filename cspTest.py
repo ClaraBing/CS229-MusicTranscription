@@ -1,9 +1,14 @@
 import unittest
 
-from pitch_contour import PitchContour, trainTransition, generateFrequency
+from pitch_contour import *
 
 class PitchContourTest(unittest.TestCase):
 
+    def test_freqbin(self):
+        bin = getBinFromFrequency(440.0)
+        self.assertEqual(bin, 0)
+        self.assertEqual(getBinFromFrequency(523), 3)
+        
     def test_freq(self):
         frequencies = generateFrequency()
         self.assertEqual(frequencies[57], 440.0)

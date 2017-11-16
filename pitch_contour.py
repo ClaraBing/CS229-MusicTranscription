@@ -38,6 +38,11 @@ def transition_probability(fbefore, fafter):
 def generateFrequency(n = 57, base = 440.0):
     return [base * math.pow(2.0, i / 12.0) for i in range(-n, n + 1)]
 
+# Get bin number from frequency using formula
+# n = floor(log(f/f0)/ log(\sqrt[12]{2})
+def getBinFromFrequency(frequency, base = 440.0):
+    return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0))))
+
 class PitchContour(CSP):
     def __init__(self):
         super(PitchContour, self).__init__()
