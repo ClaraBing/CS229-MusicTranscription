@@ -32,5 +32,5 @@ def get_wav_info(wav_file):
 
 
 if __name__ == '__main__':
-    wav_file = 'LizNelson_Rainfall_MIX.wav'
+    wav_file = 'data/Audio/LizNelson_Rainfall/LizNelson_Rainfall_MIX.wav'
     graph_spectrogram(wav_file)
