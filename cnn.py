@@ -12,26 +12,33 @@ num_epochs = 5
 batch_size = 100
 learning_rate = 0.001
 
-# MNIST Dataset
-train_dataset = dsets.MNIST(root='./data/',
-                            train=True,
-                            transform=transforms.ToTensor(),
-                            download=True)
+# Fixed parameters:
+num_classes = 109
 
-test_dataset = dsets.MNIST(root='./data/',
-                           train=False,
-                           transform=transforms.ToTensor())
+# TODO: Write DATA LOADER
+# MNIST Dataset
+
+# train_dataset = dsets.MNIST(root='./data/',
+#                             train=True,
+#                             transform=transforms.ToTensor(),
+#                             download=True)
+#
+# test_dataset = dsets.MNIST(root='./data/',
+#                            train=False,
+#                            transform=transforms.ToTensor())
 
 # Data Loader (Input Pipeline)
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                           batch_size=batch_size,
-                                           shuffle=True)
-
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                          batch_size=batch_size,
-                                          shuffle=False)
+# train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+#                                            batch_size=batch_size,
+#                                            shuffle=True)
+#
+# test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+#                                           batch_size=batch_size,
+#                                           shuffle=False)
 
 # CNN Model (2 conv layer)
+# TODO: Modify CNN architecture
+
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
@@ -45,7 +52,7 @@ class CNN(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2))
-        self.fc = nn.Linear(7*7*32, 10)
+        self.fc = nn.Linear(7*7*32, num_classes)
 
     def forward(self, x):
         out = self.layer1(x)
