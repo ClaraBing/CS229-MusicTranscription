@@ -1,4 +1,5 @@
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pylab as plt
 import numpy as np
 import librosa
@@ -46,7 +47,7 @@ def smooth(x,window_len=11,window='hanning'):
         if window_len<3:
                 return x
         if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-                raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+                raise ValueError("Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
         s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
         if window == 'flat': #moving average
                 w=np.ones(window_len,'d')
@@ -64,14 +65,14 @@ def load_txt(f_name):
 
 # Generate time slices of spectrogram, which will be used for CNN training
 # Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
-def wav2spec_data(audioName, fext, outDir):
+def wav2spec_data(data_dir, audioName, fext, outDir):
     sr = 44100 # sampling rate
-    y, sr = librosa.load(audioName+'.'+fext, sr=sr)
+    y, sr = librosa.load(data_dir+audioName+'.'+fext, sr=sr)
     S = librosa.feature.melspectrogram(y=y, sr=sr, fmax=8000, n_mels=256)
     spec = librosa.power_to_db(S, ref=np.max)
 
     for i in range(spec.shape[1]):
-        plt.figure(figsize=(1, 4)) # 100 * 400 pixels
+        plt.figure(figsize=(2.56, 2.56)) # 100 * 400 pixels
         plt.subplot(111)
         librosa.display.specshow(spec[:, i:i+1], sr=sr)
         plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
@@ -82,7 +83,7 @@ def wav2spec_data(audioName, fext, outDir):
 
 # Generate a spectrogram for the entire audio for demo
 # Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
-def wav2spec_demo(audioName, fext, outDir):
+def wav2spec_demo(data_dir, audioName, fext, outDir):
     sr = 44100
     y, sr = librosa.load(fname, sr=sr)
     S = librosa.feature.melspectrogram(y=y, sr=sr, fmax=8000, n_mels=256, y_axis='mel', x_axis="time")

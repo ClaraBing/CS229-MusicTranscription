@@ -2,7 +2,6 @@ from __future__ import print_function, division
 import os
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from read_melody import *
@@ -28,8 +27,8 @@ class PitchEstimationDataSet(Dataset):
         self.songNames = []
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
-                self.songNames.append(filename[:-4])
-                new_melody = read_melody(filename[:-4])
+                self.songNames.append(filename[:-12])
+                new_melody = read_melody(filename[:-12])
                 self.lengths.append(len(new_melody)+ self.lengths[-1])
                 self.pitches.append(new_melody)
 

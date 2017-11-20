@@ -110,7 +110,7 @@ class PitchContour(CSP):
         return self.solutions
 
     def print_solution(self):
-        print self.solutions
+        print (self.solutions)
 
 # Learn the transition probability from the data with laplace smoothing of parameter alpha
 # Data contains N lines that contains the sequence of frequencies.
