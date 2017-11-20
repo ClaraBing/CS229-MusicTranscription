@@ -10,16 +10,21 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
         reader = csv.DictReader(f)
         count = 0
         for row in reader:
-            #print(row,row.keys())
-            if (count%2!=0):
+            if count%2:
                 count+=1
                 continue
+            # print(row)
             newFrequency = 0.0
-            lst = list(row.values())
-            if float(lst[0]) > 0:
-                newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
-                # print newFrequency
-            pitch_list.append(newFrequency)
+            freq = list(row.values())[0]
+            pitch_bin = 0
+            # Note: comparing float 0.0 to 0 results in **False**
+            if freq != '0.0':
+                # Use pitch_bin as (non-ordinal) class labels, rather than frequency
+                pitch_bin = getBinFromFrequency(float(freq))
+                # print(pitch_bin)
+                # newFrequency = getFrequencyFromBin(getBinFromFrequency(float(freq)))
+                # print(newFrequency)
+            pitch_list.append(pitch_bin)
             count+=1
 #        if True:
 #          print(len(pitch_list))
