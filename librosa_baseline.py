@@ -109,6 +109,7 @@ def evaluation_error(gt, pred):
 
 	shape = np.shape(pitches)
 
+
 	pitches1 = smooth(pitches,window_len=10)
 	pitches2 = smooth(pitches,window_len=20)
 	pitches3 = smooth(pitches,window_len=30)
