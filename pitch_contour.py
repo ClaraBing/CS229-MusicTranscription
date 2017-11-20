@@ -35,9 +35,10 @@ def transition_probability(fbefore, fafter):
 
 
 # Get bin number from frequency using formula
-# n = floor(log(f/f0)/ log(\sqrt[12]{2})
+# n = floor(log(2^(57/12)*f/f0)/ log(\sqrt[12]{2})
+# why adding 2^(57/12): to make the output non-negative
 def getBinFromFrequency(frequency, base = 440.0):
-    return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0))))
+    return round((math.log(math.pow(2**57, 1/12)*frequency/base) / math.log(math.pow(2.0, 1/ 12.0))))
 
 # Get frequency from bin using the formula
 def getFrequencyFromBin(bin, base = 440.0):
