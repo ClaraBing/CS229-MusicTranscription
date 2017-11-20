@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 # our code
 from PitchEstimationDataSet import *
+from model import *
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -31,11 +32,11 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--save-interval', type=int, default=5, metavar='N',
+parser.add_argument('--save-interval', type=int, default=500, metavar='N',
                     help='how many batches to wait before saving the trained model')
-parser.add_argument('--save-dir', type=str, default='./', metavar='N',
+parser.add_argument('--save-dir', type=str, default='./output_model/', metavar='N',
                     help='save directory of trained models')
-parser.add_argument('--save-prefix', type=str, default='model_conv2_onefile', metavar='N',
+parser.add_argument('--save-prefix', type=str, default='model_conv5_train', metavar='N',
                     help='prefix of trained models')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -46,58 +47,24 @@ if args.cuda:
 
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-annotations_train="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
-annotations_test="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
+annotations_train="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/"
+# annotations_test="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
 
-training_set = PitchEstimationDataSet(annotations_train, '../data/onefiletest/')
+# train
+# annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
+training_set = PitchEstimationDataSet(annotations_train, '/root/data/train/')
 # print (training_set[150]['image'].shape, training_set[150]['frequency'])
 train_loader = DataLoader(training_set,
     batch_size = args.batch_size, shuffle = True, **kwargs)
-test_loader = DataLoader(
-    PitchEstimationDataSet(annotations_test, '../data/onefiletest', transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])),
-    batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
-
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        # conv: 3*256*256   -->  64*256*256
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, padding=3)
-        # max pool to 64*128*128
-        # conv: 64*128*128  -->  64*128*128
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.conv2_drop = nn.Dropout2d()
-        # max pool to 64*64*64
-        # conv: 64*64*64  -->  96*64*64
-        self.conv3 = nn.Conv2d(64, 96, kernel_size=3, padding=1)
-        # max pool to 96*32*32
-        # conv: 96*32*32  -->  64*32*32
-        self.conv4 = nn.Conv2d(96, 64, kernel_size=3, padding=1)
-        # conv: 64*32*32  -->  32*32*32
-        self.conv5 = nn.Conv2d(64, 32, kernel_size=3, padding=1)
-        # max pool to 32*16*16
-        # reshape(flatten) to 8192
-        self.fc1 = nn.Linear(8192, 2048)
-        self.fc2 = nn.Linear(2048, 109)
-
-    def forward(self, x):
-        # print('in forward:')
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        # print(x.data.shape)
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-        x = F.relu(F.max_pool2d(self.conv3(x), 2))
-        x = F.relu(self.conv4(x))
-        x = F.relu(F.max_pool2d(self.conv5(x), 2))
-        # print(x.data.shape)
-        x = x.view(-1, 8192)
-        # print(x.data.shape)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
-        x = self.fc2(x)
-        return F.log_softmax(x)
+# test
+# annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/test/'
+# test_loader = DataLoader(
+#     PitchEstimationDataSet(annotations_test, '../data/onefiletest', transform=transforms.Compose([
+#                        transforms.ToTensor(),
+#                        transforms.Normalize((0.1307,), (0.3081,))
+#                    ])),
+#     batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
 model = Net()
 if args.cuda:
@@ -105,7 +72,8 @@ if args.cuda:
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
-def train(epoch):
+
+def train(model, train_loader, epoch):
     model.train()
     batch_start = time()
     for batch_idx, dictionary in enumerate(train_loader):
@@ -135,12 +103,13 @@ def train(epoch):
             batch_start = time()
         # save trained model
         if batch_idx % args.save_interval == 0:
-            save_name = args.save_prefix + '_' + str(batch_idx) + '.pt'
+            save_name = args.save_prefix + str(batch_idx) + '.pt'
             print('Saving model: ' + save_name)
             # torch.save(model.state_dict(), args.save_dir+save_name)
             torch.save(model, args.save_dir+save_name)
 
-def test():
+
+def test(model, test_loader):
     model.eval()
     test_loss = 0
     correct = 0
@@ -159,6 +128,9 @@ def test():
         100. * correct / len(test_loader.dataset)))
 
 
-for epoch in range(1, args.epochs + 1):
-    train(epoch)
-    test()
+
+if __name__ == '__main__':
+    for epoch in range(1, args.epochs + 1):
+        train(model, train_loader, epoch)
+        # model = torch.load('model_conv2_onefile_full_15.pt')
+        # test(model, test_loader)
