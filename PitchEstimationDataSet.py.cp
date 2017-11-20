@@ -1,5 +1,4 @@
 from __future__ import print_function, division
-from scipy import misc
 import os
 import torch
 import numpy as np
@@ -36,20 +35,18 @@ class PitchEstimationDataSet(Dataset):
                 self.currentCount += len(new_melody)
                 self.pitches.append(new_melody)
                 # print (self.currentCount)
+        print (self.lengths)
     def __len__(self):
         # print (self.currentCount)
         return self.currentCount
 
     def __getitem__(self, idx):
         # Find which song the annotated time frame belongs to:
-        if len(self.lengths) == 1:
-          songId = 0
-        else:
-          songId = next(x[0] for x in enumerate(self.lengths) if x[1] < idx)
+        songId = next(x[0] for x in enumerate(self.lengths) if x[1] < idx)
         songName = self.songNames[songId]
-        pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
+        pitchId = idx if songName == 0 else idx - self.lengths[songId - 1]
         img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_MIX_"+str(pitchId)+".png")
-        image = misc.imread(img_name)
+        image = io.imread(img_name)
         sample = {'image': image, 'frequency': self.pitches[songId][pitchId]}
 
         if self.transform:

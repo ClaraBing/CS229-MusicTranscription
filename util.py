@@ -11,6 +11,7 @@ import librosa.display
 # smooth: take a vector as input
 # load_txt
 # wav2spec_data / wav2spec_demo: generate spectrograms from wav files, for data (slices) or demo (entire audio)
+# read_melody
 
 
 
@@ -98,3 +99,28 @@ def wav2spec_demo(data_dir, audioName, fext, outDir):
     plt.savefig(outDir + 'spec_' + audioName + '.png')
     plt.close()
 
+
+
+######################
+#    Data Process    #
+######################
+
+def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"):
+    csv_file = dir+folder_name+"_MELODY1.csv"
+    pitch_list = []
+    with open(csv_file) as f:
+        reader = csv.DictReader(f)
+        count = 0
+        for row in reader:
+            #print(row,row.keys())
+            if (count%2!=0):
+                count+=1
+                continue
+            newFrequency = 0.0
+            lst = list(row.values())
+            if float(lst[0]) > 0:
+                newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
+                # print(newFrequency)
+            pitch_list.append(newFrequency)
+            count+=1
+    return pitch_list

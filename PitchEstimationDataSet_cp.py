@@ -48,6 +48,7 @@ class PitchEstimationDataSet(Dataset):
           songId = next(x[0] for x in enumerate(self.lengths) if x[1] < idx)
         songName = self.songNames[songId]
         pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
+        print (pitchId)
         img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_MIX_"+str(pitchId)+".png")
         image = misc.imread(img_name)
         sample = {'image': image, 'frequency': self.pitches[songId][pitchId]}

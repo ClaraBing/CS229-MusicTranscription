@@ -38,13 +38,12 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 annotations_train="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
 annotations_test="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
 
-training_set = PitchEstimationDataSet(annotations_train, '../data/onefiletest/',  
+train_loader = DataLoader(
+    PitchEstimationDataSet(annotations_train, '../data/onefiletest/',  
                            transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
-                   ]))
-# print (training_set[150]['image'].shape, training_set[150]['frequency'])
-train_loader = DataLoader(training_set,
+                   ])),
     batch_size = args.batch_size, shuffle = True, **kwargs)
 test_loader = DataLoader(
     PitchEstimationDataSet(annotations_test, '../data/onefiletest', transform=transforms.Compose([
@@ -57,11 +56,11 @@ test_loader = DataLoader(
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
+        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, 109)
+        self.fc2 = nn.Linear(50, 10)
 
     def forward(self, x):
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
@@ -81,7 +80,6 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 def train(epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
-        print (batch_idx)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
