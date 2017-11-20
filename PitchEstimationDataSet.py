@@ -46,9 +46,13 @@ class PitchEstimationDataSet(Dataset):
         if len(self.lengths) == 1:
           songId = 0
         else:
-          songId = next(x[0] for x in enumerate(self.lengths) if x[1] < idx)
+          songId = next(x[0] for x in enumerate(self.lengths) if x[1] >= idx)
         songName = self.songNames[songId]
+        # print("songId: " + str(songId))
+        # print('idx: '+str(idx))
+        # print(self.lengths)
         pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
+        # print('pitchId: ' + str(pitchId))
         img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_MIX_"+str(pitchId)+".png")
         # np.transpose: change from H*W*C to C*H*W
         image = np.transpose(ndimage.imread(img_name, mode='RGB'), (2,0,1))
