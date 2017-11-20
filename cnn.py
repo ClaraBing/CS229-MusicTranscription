@@ -31,6 +31,12 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
+parser.add_argument('--save-interval', type=int, default=5, metavar='N',
+                    help='how many batches to wait before saving the trained model')
+parser.add_argument('--save-dir', type=str, default='./', metavar='N',
+                    help='save directory of trained models')
+parser.add_argument('--save-prefix', type=str, default='model_conv2_onefile', metavar='N',
+                    help='prefix of trained models')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -83,7 +89,7 @@ class Net(nn.Module):
         # print(x.data.shape)
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         x = F.relu(F.max_pool2d(self.conv3(x), 2))
-        x = F.relu(self.conv4(x),2)
+        x = F.relu(self.conv4(x))
         x = F.relu(F.max_pool2d(self.conv5(x), 2))
         # print(x.data.shape)
         x = x.view(-1, 8192)
@@ -119,12 +125,20 @@ def train(epoch):
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
+
+        # training log
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime per batch: {:.6f}s'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.data[0],
                 (time()-batch_start)/args.log_interval))
             batch_start = time()
+        # save trained model
+        if batch_idx % args.save_interval == 0:
+            save_name = args.save_prefix + '_' + str(batch_idx) + '.pt'
+            print('Saving model: ' + save_name)
+            # torch.save(model.state_dict(), args.save_dir+save_name)
+            torch.save(model, args.save_dir+save_name)
 
 def test():
     model.eval()
