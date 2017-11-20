@@ -25,17 +25,20 @@ class PitchEstimationDataSet(Dataset):
         self.lengths = []
         self.numberOfSongs = len(os.listdir(annotations_dir))
         self.songNames = []
-        currentCount = 0
+        self.currentCount = 0
         for filename in os.listdir(annotations_dir):
+            # print (filename)
             if filename.endswith(".csv"):
                 self.songNames.append(filename[:-12])
                 new_melody = read_melody(filename[:-12])
-                self.lengths.append(len(new_melody)+ currentCount)
-                currentCount += len(new_melody)
+                self.lengths.append(len(new_melody)+ self.currentCount)
+                self.currentCount += len(new_melody)
                 self.pitches.append(new_melody)
+                print (self.currentCount)
 
     def __len__(self):
-        return self.lengths[-1]
+        print (self.currentCount)
+        return self.currentCount
 
     def __getitem__(self, idx):
         # Find which song the annotated time frame belongs to:

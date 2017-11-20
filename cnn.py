@@ -7,6 +7,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
+from PitchEstimationDataSet import *
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -34,16 +35,18 @@ if args.cuda:
 
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+annotations_train="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"
+annotations_test="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"
 
-train_loader = Dataloader(
-    PitchEstimationDataSet('../data', train = True, download = True, 
+train_loader = DataLoader(
+    PitchEstimationDataSet(annotations_train, '../data',  
                            transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
     batch_size = args.batch_size, shuffle = True, **kwargs)
-test_loader = (
-    PitchEstimationDataSet('../data', train=False, transform=transforms.Compose([
+test_loader = DataLoader(
+    PitchEstimationDataSet(annotations_test, '../data', transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
