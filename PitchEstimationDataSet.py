@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 from scipy import misc
+from scipy import ndimage
 import os
 import torch
 import numpy as np
@@ -28,10 +29,10 @@ class PitchEstimationDataSet(Dataset):
         self.songNames = []
         self.currentCount = 0
         for filename in os.listdir(annotations_dir):
-            # print (filename)
             if filename.endswith(".csv"):
-                self.songNames.append(filename[:-12])
-                new_melody = read_melody(filename[:-12], annotations_dir)
+                audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
+                self.songNames.append(audioName)
+                new_melody = read_melody(audioName, annotations_dir)
                 self.lengths.append(len(new_melody)+ self.currentCount)
                 self.currentCount += len(new_melody)
                 self.pitches.append(new_melody)
@@ -49,7 +50,8 @@ class PitchEstimationDataSet(Dataset):
         songName = self.songNames[songId]
         pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
         img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_MIX_"+str(pitchId)+".png")
-        image = misc.imread(img_name, mode='I')
+        # np.transpose: change from H*W*C to C*H*W
+        image = np.transpose(ndimage.imread(img_name, mode='RGB'), (2,0,1))
         sample = {'image': image, 'frequency': self.pitches[songId][pitchId]}
 
         if self.transform:
