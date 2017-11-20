@@ -14,7 +14,7 @@ def read_melody(folder_name):
 			if float(row.values()[0]) > 0:
 				newFrequency = getFrequencyFromBin(getBinFromFrequency(float(row.values()[0])))
 				# print newFrequency
-			pitch_list.append([count, newFrequency])
+			pitch_list.append(newFrequency)
 			count+=1
 #		pitch_list = list(reader)
 #        if True:
