@@ -2,10 +2,8 @@ import csv
 from pitch_contour import *
 
 def read_melody(folder_name):
-	dir = "data/"
-	# dir = "../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"
-	# csv_file = dir+folder_name+"_MELODY1.csv"
-	csv_file = dir + "test.csv"
+	dir = "../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"
+	csv_file = dir+folder_name+"_MELODY1.csv"
 	pitch_list = []
 	with open(csv_file) as f:
 		reader = csv.DictReader(f)
