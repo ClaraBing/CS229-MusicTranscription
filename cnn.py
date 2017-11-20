@@ -81,7 +81,7 @@ def train(epoch):
         target = dictionary['frequency']
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
+        data, target = Variable(data).type(torch.FloatTensor), Variable(target)
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
