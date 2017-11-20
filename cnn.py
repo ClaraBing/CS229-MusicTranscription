@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-
+from torch.utils.data import DataLoader
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -35,14 +35,14 @@ if args.cuda:
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
-train_loader = torch.utils.data.Dataloader(
+train_loader = Dataloader(
     PitchEstimationDataSet('../data', train = True, download = True, 
                            transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
     batch_size = args.batch_size, shuffle = True, **kwargs)
-test_loader = torch.utils.data.DataLoader(
+test_loader = (
     PitchEstimationDataSet('../data', train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))

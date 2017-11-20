@@ -25,11 +25,13 @@ class PitchEstimationDataSet(Dataset):
         self.lengths = []
         self.numberOfSongs = len(os.listdir(annotations_dir))
         self.songNames = []
+        currentCount = 0
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
                 self.songNames.append(filename[:-12])
                 new_melody = read_melody(filename[:-12])
-                self.lengths.append(len(new_melody)+ self.lengths[-1])
+                self.lengths.append(len(new_melody)+ currentCount)
+                currentCount += len(new_melody)
                 self.pitches.append(new_melody)
 
     def __len__(self):
@@ -49,6 +51,6 @@ class PitchEstimationDataSet(Dataset):
 
         return sample
 
-path_to_annotations = '../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/'
-path_to_images = '../data/'
-raw_dataset = PitchEstimationDataSet(path_to_annotations, path_to_annotations)
+# path_to_annotations = '../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/'
+# path_to_images = '../data/'
+# raw_dataset = PitchEstimationDataSet(path_to_annotations, path_to_annotations)
