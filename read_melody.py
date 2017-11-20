@@ -17,13 +17,11 @@ def read_melody(folder_name):
 			pitch_list.append([count, newFrequency])
 			count+=1
 #		pitch_list = list(reader)
-        if True:
-          print(len(pitch_list))
-          print(pitch_list[:3])
+#        if True:
+#          print(len(pitch_list))
+#          print(pitch_list[:3])
 	return pitch_list
 
 
 if __name__ == '__main__':
 	pitch_list = read_melody("AimeeNorwich_Child")
-	# print(len(pitch_list))
-	# print(pitch_list)
