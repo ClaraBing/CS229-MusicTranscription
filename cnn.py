@@ -1,3 +1,4 @@
+# CNN TRAINING
 # Starter code from /
 # https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/02-intermediate/convolutional_neural_network/main.py
 

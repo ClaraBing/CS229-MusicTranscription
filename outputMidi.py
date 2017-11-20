@@ -13,12 +13,15 @@ def outputMIDI(N, frequencies, output_name,  duration = 1):
     MyMIDI.addTrackName(track, time, output_name)
     MyMIDI.addTempo(track,time,120)
     for i in range(N):
-        midiNote = int(round(21 + 12 * np.log(frequencies[i]/ 27.5) / np.log(2)))
-        MyMIDI.addNote(track, 0, midiNote, time, duration, 100)
+        # Ignore frequencies 0, this means there's a silence
+        if frequencies[i] > 0:
+            midiNote = int(round(21 + 12 * np.log(frequencies[i]/ 27.5) / np.log(2)))
+            MyMIDI.addNote(track, 0, midiNote, time, duration, 100)
         time += duration
 
     binfile = open("midiOutput/"+ output_name + ".mid", 'wb')
     MyMIDI.writeFile(binfile)
     binfile.close()
+
 
 # outputMIDI(5, [261.3, 293.66, 329.63, 349.23, 392.0], "doremifasol")

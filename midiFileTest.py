@@ -1,12 +1,8 @@
-from midiutil.MidiFile import MIDIFile
+from outputMidi import *
+from read_melody import *
+import numpy as np
 
-MyMIDI = MIDIFile(1)
-track = 0
-time = 0
-MyMIDI.addTrackName(track,time,"Sample Track")
-MyMIDI.addTempo(track,time,120)
-MyMIDI.addNote(track,0,100,0,1,100)
+name = 'test.mid'
+pitch_list = np.array(read_melody(name))
 
-binfile = open("midiOutput/output.mid", 'wb')
-MyMIDI.writeFile(binfile)
-binfile.close()
+outputMIDI(len(pitch_list), pitch_list[:, 1], 'test',  duration = 1)
