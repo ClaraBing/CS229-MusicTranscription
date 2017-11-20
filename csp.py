@@ -96,6 +96,15 @@ class CSP(object):
         => csp.binaryFactors[var1][var2][val1][val2]
         """
         # never shall a binary factor be added over a single variable
+        try:
+            assert var1 != var2
+        except:
+            print ('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            #print '!! Tip:                                                                       !!'
+            #print '!! You are adding a binary factor over a same variable...                  !!'
+            #print '!! Please check your code and avoid doing this.                               !!'
+            #print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            raise
 
         self.update_binary_factor_table(var1, var2,
             {val1: {val2: float(factor_func(val1, val2)) \
@@ -144,8 +153,8 @@ class BacktrackingSearch():
         Prints a message summarizing the outcome of the solver.
         """
         if self.optimalAssignment:
-            print ("Found %d optimal assignments with weight %f in %d operations") % \
-                (self.numOptimalAssignments, self.optimalWeight, self.numOperations)
+            print ("Found %d optimal assignments with weight %f in %d operations" % \
+                (self.numOptimalAssignments, self.optimalWeight, self.numOperations))
         else:
             print ("No solution was found.")
 
