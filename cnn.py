@@ -38,11 +38,7 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 annotations_train="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
 annotations_test="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
 
-training_set = PitchEstimationDataSet(annotations_train, '../data/onefiletest/',  
-                           transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ]))
+training_set = PitchEstimationDataSet(annotations_train, '../data/onefiletest/')
 # print (training_set[150]['image'].shape, training_set[150]['frequency'])
 train_loader = DataLoader(training_set,
     batch_size = args.batch_size, shuffle = True, **kwargs)
@@ -80,8 +76,9 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
 def train(epoch):
     model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        print (batch_idx)
+    for batch_idx, dictionary in enumerate(train_loader):
+        data = dictionary['image']
+        target = dictionary['frequency']
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
