@@ -32,7 +32,7 @@ class PitchEstimationDataSet(Dataset):
             if filename.endswith(".csv"):
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
-                new_melody = read_melody(audioName, annotations_dir)
+                new_melody = read_melody(audioName, annotations_dir)[:-1]
                 self.lengths.append(len(new_melody)+ self.currentCount)
                 self.currentCount += len(new_melody)
                 self.pitches.append(new_melody)
@@ -46,7 +46,7 @@ class PitchEstimationDataSet(Dataset):
         if len(self.lengths) == 1:
           songId = 0
         else:
-          songId = next(x[0] for x in enumerate(self.lengths) if x[1] >= idx)
+          songId = next(x[0] for x in enumerate(self.lengths) if x[1] > idx)
         songName = self.songNames[songId]
         # print("songId: " + str(songId))
         # print('idx: '+str(idx))
