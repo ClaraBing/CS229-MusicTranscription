@@ -6,8 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-from torch.utils.data import DataLoader
-from PitchEstimationDataSet import *
+
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -35,18 +34,15 @@ if args.cuda:
 
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-annotations_train="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
-annotations_test="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
-
-train_loader = DataLoader(
-    PitchEstimationDataSet(annotations_train, '../data/onefiletest/',  
-                           transform=transforms.Compose([
+train_loader = torch.utils.data.DataLoader(
+    datasets.MNIST('../data', train=True, download=True,
+                   transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
-    batch_size = args.batch_size, shuffle = True, **kwargs)
-test_loader = DataLoader(
-    PitchEstimationDataSet(annotations_test, '../data/onefiletest', transform=transforms.Compose([
+    batch_size=args.batch_size, shuffle=True, **kwargs)
+test_loader = torch.utils.data.DataLoader(
+    datasets.MNIST('../data', train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])),
@@ -63,9 +59,13 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(50, 10)
 
     def forward(self, x):
+        # print('in forward:')
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        # print(x.data.shape)
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        # print(x.data.shape)
         x = x.view(-1, 320)
+        # print(x.data.shape)
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)

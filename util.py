@@ -4,6 +4,8 @@ import matplotlib.pylab as plt
 import numpy as np
 import librosa
 import librosa.display
+import csv
+import pitch_contour
 
 # Function list:
 # extract_pitch_max: keep only max (magnitude) pitches at each time interval
@@ -86,13 +88,13 @@ def wav2spec_data(data_dir, audioName, fext, outDir):
 # Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
 def wav2spec_demo(data_dir, audioName, fext, outDir):
     sr = 44100
-    y, sr = librosa.load(fname, sr=sr)
-    S = librosa.feature.melspectrogram(y=y, sr=sr, fmax=8000, n_mels=256, y_axis='mel', x_axis="time")
+    y, sr = librosa.load(data_dir+audioName+'.'+fext, sr=sr)
+    S = librosa.feature.melspectrogram(y=y, sr=sr, fmax=8000, n_mels=256)
     spec = librosa.power_to_db(S, ref=np.max)
 
     plt.figure(figsize=(20, 4)) # 2000 * 400 pixels
     plt.subplot(111)
-    librosa.display.specshow(spec[:, i:i+1], sr=sr)
+    librosa.display.specshow(spec, sr=sr, y_axis='mel', x_axis="time")
     # display the legend: color vs db
     plt.colorbar(format='%+2.0f dB')
     plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
@@ -119,8 +121,9 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
             newFrequency = 0.0
             lst = list(row.values())
             if float(lst[0]) > 0:
-                newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
-                # print(newFrequency)
+                #newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
+                newFrequency = float(list(row.value())[0])
+		# print(newFrequency)
             pitch_list.append(newFrequency)
             count+=1
     return pitch_list

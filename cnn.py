@@ -2,6 +2,7 @@
 from __future__ import print_function
 import argparse
 from time import time
+import sys # for flushing stdout
 # torch related
 import torch
 import torch.nn as nn
@@ -23,9 +24,11 @@ parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
-                    help='learning rate (default: 0.01)')
-parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
-                    help='SGD momentum (default: 0.9)')
+                    help='learning rate (default: 0.001)')
+parser.add_argument('--lr-interval', type=int, default=1000, metavar='LR',
+                    help='decrease lr if avg err of a lr-interval plateaus (default: 1000)')
+parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
+                    help='SGD momentum (default: 0.5)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -44,6 +47,14 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
+
+
+def print_config(args):
+    print('batch size: {:d}'.format(args.batch_size))
+    print('epochs: {:d}'.format(args.epochs))
+    print('lr: {:f} (interval={:d})'.format(args.lr, args.lr_interval))
+    print('momentum: {:f}'.format(args.momentum))
+    print('save: dir: {:s} / prefix: {:s}'.format(args.save_dir, args.save_prefix))
 
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
@@ -74,9 +85,21 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
 
 def train(model, train_loader, epoch):
+    print_config(args)
     model.train()
     batch_start = time()
+    avg_loss, prev_avg_loss = 0, 1000
     for batch_idx, dictionary in enumerate(train_loader):
+        if batch_idx!=0 and batch_idx%args.lr_interval==0:
+            print('checking for avg loss')
+            avg_loss = avg_loss / args.lr_interval
+            if True: # avg_loss - prev_avg_loss < 0.1:
+                args.lr /= 10
+                for param_group in optimizer.param_groups:
+                    print(param_group['lr'])
+                    param_group['lr'] = args.lr
+                print('Update lr to ' + str(args.lr))
+            prev_avg_loss, avg_loss = avg_loss, 0
         data = dictionary['image']
         target = dictionary['frequency']
         if args.cuda:
@@ -91,6 +114,7 @@ def train(model, train_loader, epoch):
         # print(output.data.shape)
         # print(output.data.max())
         loss = F.nll_loss(output, target)
+        # avg_loss += loss
         loss.backward()
         optimizer.step()
 
@@ -101,11 +125,13 @@ def train(model, train_loader, epoch):
                 100. * batch_idx / len(train_loader), loss.data[0],
                 (time()-batch_start)/args.log_interval))
             batch_start = time()
+            sys.stdout.flush()
         # save trained model
         if batch_idx % args.save_interval == 0:
             save_name = args.save_prefix + str(batch_idx) + '.pt'
             print('Saving model: ' + save_name)
             # torch.save(model.state_dict(), args.save_dir+save_name)
+            # TODO: save also the optimizer (right now the lr can be found in the log)
             torch.save(model, args.save_dir+save_name)
 
 
