@@ -32,10 +32,10 @@ class PitchEstimationDataSet(Dataset):
             if filename.endswith(".csv"):
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
-                new_melody = read_melody(audioName, annotations_dir)[:-1]
-                self.lengths.append(len(new_melody)+ self.currentCount)
-                self.currentCount += len(new_melody)
-                self.pitches.append(new_melody)
+                new_bin_melody, _ = read_melody(audioName, annotations_dir)[:-1]
+                self.lengths.append(len(new_bin_melody)+ self.currentCount)
+                self.currentCount += len(new_bin_melody)
+                self.pitches.append(new_bin_melody)
                 # print (self.currentCount)
     def __len__(self):
         # print (self.currentCount)
