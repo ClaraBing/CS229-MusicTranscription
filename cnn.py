@@ -24,11 +24,11 @@ parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
-                    help='learning rate (default: 0.001)')
+                    help='learning rate (default: 0.01)')
 parser.add_argument('--lr-interval', type=int, default=1000, metavar='LR',
                     help='decrease lr if avg err of a lr-interval plateaus (default: 1000)')
-parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
-                    help='SGD momentum (default: 0.9)')
+parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
+                    help='SGD momentum (default: 0.5)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -37,7 +37,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 parser.add_argument('--save-interval', type=int, default=500, metavar='N',
                     help='how many batches to wait before saving the trained model')
-parser.add_argument('--save-dir', type=str, default='./output_model/conv5_7/', metavar='N',
+parser.add_argument('--save-dir', type=str, default='./output_model/conv5_8/', metavar='N',
                     help='save directory of trained models')
 parser.add_argument('--save-prefix', type=str, default='model_conv5_train', metavar='N',
                     help='prefix of trained models')
@@ -103,9 +103,9 @@ def train(model, train_loader, epoch):
             prev_avg_loss, avg_loss = avg_loss, 0
         data = dictionary['image']
         target = dictionary['frequency']
+        data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
         # print('data & target:')
         # print(data.data.shape)
         # print(target.data.shape)
@@ -160,5 +160,11 @@ def test(model, test_loader):
 if __name__ == '__main__':
     for epoch in range(1, args.epochs + 1):
         train(model, train_loader, epoch)
+        if args.momentum < 0.9:
+            args.momentum += 0.1
+            for param_group in optimizer.param_groups:
+                print(param_group['momentum'])
+                param_group['momentum'] = args.momentum
+            print('Update momentum to ' + str(args.momentum))
         # model = torch.load('model_conv2_onefile_full_15.pt')
         # test(model, test_loader)
