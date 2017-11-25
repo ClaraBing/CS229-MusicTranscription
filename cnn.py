@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 # our code
 from PitchEstimationDataSet import *
 from model import *
+from train_util import *
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -25,8 +26,10 @@ parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                     help='learning rate (default: 0.01)')
-parser.add_argument('--lr-interval', type=int, default=1000, metavar='LR',
-                    help='decrease lr if avg err of a lr-interval plateaus (default: 1000)')
+parser.add_argument('--lr-interval', type=int, default=5000, metavar='LR',
+                    help='decrease lr if avg err of a lr-interval plateaus (default: 5000)')
+parser.add_argument('--update_momentum', type=bool, default=True, metavar='M',
+                    help='whether to update SGD momentum')
 parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
                     help='SGD momentum (default: 0.5)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -35,9 +38,9 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--save-interval', type=int, default=500, metavar='N',
+parser.add_argument('--save-interval', type=int, default=5000, metavar='N',
                     help='how many batches to wait before saving the trained model')
-parser.add_argument('--save-dir', type=str, default='./output_model/conv5_8/', metavar='N',
+parser.add_argument('--save-dir', type=str, default='./output_model/conv5_11/', metavar='N',
                     help='save directory of trained models')
 parser.add_argument('--save-prefix', type=str, default='model_conv5_train', metavar='N',
                     help='prefix of trained models')
@@ -59,24 +62,28 @@ def print_config(args):
 
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-annotations_train="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/"
-# annotations_test="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/onefiletest/"
 
 # train
-# annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
+annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
 training_set = PitchEstimationDataSet(annotations_train, '/root/data/train/')
-# print (training_set[150]['image'].shape, training_set[150]['frequency'])
 train_loader = DataLoader(training_set,
     batch_size = args.batch_size, shuffle = True, **kwargs)
 
+# val
+annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
+val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
+val_loader = DataLoader(val_set,
+    batch_size = args.batch_size, shuffle = True, **kwargs)
+
 # test
-# annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/test/'
-# test_loader = DataLoader(
-#     PitchEstimationDataSet(annotations_test, '../data/onefiletest', transform=transforms.Compose([
-#                        transforms.ToTensor(),
-#                        transforms.Normalize((0.1307,), (0.3081,))
-#                    ])),
-#     batch_size=args.test_batch_size, shuffle=True, **kwargs)
+annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/test/'
+test_set = PitchEstimationDataSet(annotations_test, 'root/data/test', transform=transforms.Compose([
+               transforms.ToTensor(),
+               transforms.Normalize((0.1307,), (0.3081,))
+               ]))
+test_set = PitchEstimationDataSet(annotations_test, 'root/data/test')
+test_loader = DataLoader(test_set,
+    batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
 model = Net()
 if args.cuda:
@@ -85,22 +92,11 @@ if args.cuda:
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
 
-def train(model, train_loader, epoch):
-    print_config(args)
+def train(model, train_loader, criterion, epoch):
     model.train()
     batch_start = time()
     avg_loss, prev_avg_loss = 0, 1000
     for batch_idx, dictionary in enumerate(train_loader):
-        if batch_idx!=0 and batch_idx%args.lr_interval==0:
-            print('checking for avg loss')
-            avg_loss = avg_loss / args.lr_interval
-            if True: # avg_loss - prev_avg_loss < 0.1:
-                args.lr /= 10
-                for param_group in optimizer.param_groups:
-                    print(param_group['lr'])
-                    param_group['lr'] = args.lr
-                print('Update lr to ' + str(args.lr))
-            prev_avg_loss, avg_loss = avg_loss, 0
         data = dictionary['image']
         target = dictionary['frequency']
         data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
@@ -115,7 +111,7 @@ def train(model, train_loader, epoch):
         # print(output.data.shape)
         # print(output.data.max())
         # print(output.data.min())
-        loss = F.nll_loss(output, target)
+        loss = criterion(output, target) # F.nll_loss(output, target)
         # avg_loss += loss
         loss.backward()
         optimizer.step()
@@ -137,14 +133,58 @@ def train(model, train_loader, epoch):
             torch.save(model, args.save_dir+save_name)
 
 
+def validate(data_loader, model, criterion):
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1, top5 = AverageMeter(), AverageMeter()
+
+    model.eval()
+
+    for batch_idx, dictionary in enumerate(data_loader):
+        batch_start = time()
+
+        data, target = Variable(dictionary['image']).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+
+        # compute output
+        output = model(data)
+        # performance measure: loss & top 1/5 accuracy
+        loss = criterion(output, target)
+        losses.update(loss.data[0], data.size(0))
+        prec1, prec5 = accuracy(output.data, target.data, topk=(1,5))
+        top1.update(prec1[0], data.size(0))
+        top5.update(prec5[0], data.size(0))
+
+        batch_time.update(time() - batch_start)
+        
+        if batch_idx % args.log_interval == 0:
+            print('Val({:d}): '
+                  'Loss: {:f} (avg: {:f})\t'
+                  'Prec@1: {:f} (avg: {:f})\t'
+                  'Prec@5: {:f} (avg: {:f})\t'
+                  'Time: {:f}'.format(
+                  batch_idx, losses.val, losses.avg, top1.val, top1.avg, top5.val, top5.avg, batch_time.avg))
+            sys.stdout.flush()
+
+    # overall average
+    print('\n================\n'
+          'Loss: {:f}\nPrec@1: {:f}\nPrec@5: {:f}'
+          '\n================\n\n'.format(
+          losses.avg, top1.avg, top5.avg))
+    return top1.avg
+
+
+# TODO: check if validate() & test() calculate the same error;
+# If yes, merge the two functions
 def test(model, test_loader):
     model.eval()
     test_loss = 0
     correct = 0
     for data, target in test_loader:
+        data, target = Variable(data, volatile=True).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
         output = model(data)
         test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
         pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
@@ -158,13 +198,46 @@ def test(model, test_loader):
 
 
 if __name__ == '__main__':
+    print_config(args)
+
+    criterion = F.nll_loss
+    best_prec = 0
     for epoch in range(1, args.epochs + 1):
-        train(model, train_loader, epoch)
-        if args.momentum < 0.9:
+        print('\n\n###############\n'
+          '    Epoch {:d}'
+          '\n###############'.format(epoch))
+
+        train(model, train_loader, criterion, epoch)
+
+        # validation
+        prec = validate(val_loader, model, criterion)
+        is_best = prec > best_prec
+        best_prec = max(prec, best_prec)
+        save_checkpoint({
+            'epoch': epoch,
+            'state_dict': model.state_dict(),
+            'best_prec': best_prec,
+            'optimizer': optimizer.state_dict(),
+        }, is_best, filename=args.save_dir+args.save_prefix+'_epoch{:d}.pt'.format(epoch))
+
+        # update lr
+        if epoch<6:
+            # print('checking for avg loss')
+            # avg_loss = avg_loss / args.lr_interval
+            # if prev_avg_loss - avg_loss < 0.05:
+            if True:
+                args.lr /= 10
+                for param_group in optimizer.param_groups:
+                    print(param_group['lr'])
+                    param_group['lr'] = args.lr
+                print('Update lr to ' + str(args.lr))
+            # prev_avg_loss, avg_loss = avg_loss, 0
+        # update momentum
+        if args.update_momentum and args.momentum < 0.9:
             args.momentum += 0.1
             for param_group in optimizer.param_groups:
                 print(param_group['momentum'])
                 param_group['momentum'] = args.momentum
             print('Update momentum to ' + str(args.momentum))
-        # model = torch.load('model_conv2_onefile_full_15.pt')
-        # test(model, test_loader)
+
+    # test(model, test_loader)
