@@ -1,7 +1,6 @@
 import csv
 from pitch_contour import *
 
-
 def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sampling_rate = 2):
 
     csv_file = dir+folder_name+"_MELODY1.csv"
@@ -16,15 +15,16 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
                 count+=1
                 continue
             # print(row)
-            newFrequency = 0.0
-            freq = list(row.values())[0]
+            newFreq = float(list(row.values())[0])
             # Note: comparing float 0.0 to 0 results in **False**
-            if freq != '0.0':
-                pitch_bin_list.append(getBinFromFrequency(float(freq)))
-            pitch_freq_list.append(float(freq))
+            if newFreq > 0:
+                pitch_bin_list.append(getBinFromFrequency(newFreq))
+            else:
+                pitch_bin_list.append(0)
+            pitch_freq_list.append(newFreq)
             count+=1
     return pitch_bin_list, pitch_freq_list
 
 
-if __name__ == '__main__':
-    pitch_bin_list, pitch_freq_list = read_melody("AimeeNorwich_Child")
+# if __name__ == '__main__':
+#     pitch_bin_list, pitch_freq_list = read_melody("AimeeNorwich_Child")
