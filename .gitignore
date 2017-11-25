@@ -1,3 +1,8 @@
 data/
 midiOutput/
+output_model/
+pitch_plots/
 *.pyc
+*.log
+*.error
+*.swp

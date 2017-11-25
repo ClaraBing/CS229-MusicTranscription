@@ -7,14 +7,11 @@ debug = False
 database_sr = 44100
 
 def main():
-	audio_name = 'AimeeNorwich_Flying'
-	audio_file = '../MedleyDB_selected/Audios/AimeeNorwich_Flying/' + audio_name + '_MIX.wav'
-	result_file = '../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/' + audio_name + '.csv'
+	audio_name = 'LizNelson_Rainfall_MIX'
+	audio_file = 'data/Audio/LizNelson_Rainfall/' + audio_name + '.wav'
+	result_file = 'data/' + audio_name + '.csv'
 	raw_pitch, processed_pitch = baseline_tracking(audio_file, result_file)
-	#util.plot(processed_pitch, audio_name) # pass in input as needed
-	gt = util.read_melody(audio_name)
-	err = evaluation_error(gt, processed_pitch)
-	print("baseline error:"+str(err))
+	util.plot(processed_pitch, audio_name) # pass in input as needed
 
 # Takes input file and result file
 # Outputs raw pitches from the input file,
