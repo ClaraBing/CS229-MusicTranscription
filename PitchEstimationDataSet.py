@@ -6,7 +6,8 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
-from read_melody import *
+# from read_melody import *
+from util import *
 
 class PitchEstimationDataSet(Dataset):
     """Pitch Estimation dataset."""

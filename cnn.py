@@ -27,8 +27,8 @@ parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                     help='learning rate (default: 0.001)')
 parser.add_argument('--lr-interval', type=int, default=1000, metavar='LR',
                     help='decrease lr if avg err of a lr-interval plateaus (default: 1000)')
-parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
-                    help='SGD momentum (default: 0.5)')
+parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+                    help='SGD momentum (default: 0.9)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -37,7 +37,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 parser.add_argument('--save-interval', type=int, default=500, metavar='N',
                     help='how many batches to wait before saving the trained model')
-parser.add_argument('--save-dir', type=str, default='./output_model/', metavar='N',
+parser.add_argument('--save-dir', type=str, default='./output_model/conv5_7/', metavar='N',
                     help='save directory of trained models')
 parser.add_argument('--save-prefix', type=str, default='model_conv5_train', metavar='N',
                     help='prefix of trained models')
@@ -50,6 +50,7 @@ if args.cuda:
 
 
 def print_config(args):
+    print('Using ' + ('GPU' if args.cuda else 'CPU'))
     print('batch size: {:d}'.format(args.batch_size))
     print('epochs: {:d}'.format(args.epochs))
     print('lr: {:f} (interval={:d})'.format(args.lr, args.lr_interval))
@@ -113,6 +114,7 @@ def train(model, train_loader, epoch):
         # print('output:')
         # print(output.data.shape)
         # print(output.data.max())
+        # print(output.data.min())
         loss = F.nll_loss(output, target)
         # avg_loss += loss
         loss.backward()
@@ -120,8 +122,8 @@ def train(model, train_loader, epoch):
 
         # training log
         if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime per batch: {:.6f}s'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
+            print('Train Epoch: epoch {} iter {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime per batch: {:.6f}s'.format(
+                epoch, batch_idx, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.data[0],
                 (time()-batch_start)/args.log_interval))
             batch_start = time()
