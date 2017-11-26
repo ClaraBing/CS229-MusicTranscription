@@ -30,8 +30,8 @@ parser.add_argument('--lr-interval', type=int, default=5000, metavar='LR',
                     help='decrease lr if avg err of a lr-interval plateaus (default: 5000)')
 parser.add_argument('--update_momentum', type=bool, default=True, metavar='M',
                     help='whether to update SGD momentum')
-parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
-                    help='SGD momentum (default: 0.5)')
+parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+                    help='SGD momentum (default: 0.9)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -40,7 +40,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 parser.add_argument('--save-interval', type=int, default=5000, metavar='N',
                     help='how many batches to wait before saving the trained model')
-parser.add_argument('--save-dir', type=str, default='./output_model/conv5_11/', metavar='N',
+parser.add_argument('--save-dir', type=str, default='./output_model/conv5_/', metavar='N',
                     help='save directory of trained models')
 parser.add_argument('--save-prefix', type=str, default='model_conv5_train', metavar='N',
                     help='prefix of trained models')
@@ -50,15 +50,6 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
-
-
-def print_config(args):
-    print('Using ' + ('GPU' if args.cuda else 'CPU'))
-    print('batch size: {:d}'.format(args.batch_size))
-    print('epochs: {:d}'.format(args.epochs))
-    print('lr: {:f} (interval={:d})'.format(args.lr, args.lr_interval))
-    print('momentum: {:f}'.format(args.momentum))
-    print('save: dir: {:s} / prefix: {:s}'.format(args.save_dir, args.save_prefix))
 
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
@@ -199,6 +190,7 @@ def test(model, test_loader):
 
 if __name__ == '__main__':
     print_config(args)
+    model.print_archi()
 
     criterion = F.nll_loss
     best_prec = 0
@@ -225,7 +217,7 @@ if __name__ == '__main__':
             # print('checking for avg loss')
             # avg_loss = avg_loss / args.lr_interval
             # if prev_avg_loss - avg_loss < 0.05:
-            if True:
+            if epoch == 2 or epoch == 4:
                 args.lr /= 10
                 for param_group in optimizer.param_groups:
                     print(param_group['lr'])
