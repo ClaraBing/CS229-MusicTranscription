@@ -25,25 +25,20 @@ class PitchContourTest(unittest.TestCase):
         K = 2
         N = 4
         frequencies = [
-        [9, 10],
-        [1, 9],
-        [1, 8],
-        [5, 7]
+        [16, 15],
+        [15, 14],
+        [12, 13],
+        [10, 12]
         ]
         probabilities = [
         [0.1, 0.9],
         [0.1, 0.9],
-        [0.5, 0.5],
+        [0.45, 0.55],
         [0, 1]
         ]
-        variances = [
-        [0.01 for i in range(3)]
-        for i in range(4)
-        ]
-        flat_pitch.setRange(range(1, 11))
-        flat_pitch.setNotes(N, K, probabilities, frequencies, variances)
+        flat_pitch.setNotes(N, K, probabilities, frequencies)
         solutionCSP = flat_pitch.solve()
-        solution = {0 : 10, 1: 9, 2: 8, 3: 7}
+        solution = {0 : 15, 1: 14, 2: 13, 3: 12}
         self.assertTrue(solution == solutionCSP)
 
     def test_both(self):
@@ -64,13 +59,8 @@ class PitchContourTest(unittest.TestCase):
         [0.45, 0.55],
         [1, 0]
         ]
-        variances = [
-        [0.01 for i in range(3)]
-        for i in range(4)
-        ]
-        pitch.setRange(range(5))
         pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
-        pitch.setNotes(N, K, probabilities, frequencies, variances)
+        pitch.setNotes(N, K, probabilities, frequencies)
         solutionCSP = pitch.solve()
         solution = {0 : 1, 1: 2, 2: 3, 3: 2}
         self.assertTrue(solution == solutionCSP)
