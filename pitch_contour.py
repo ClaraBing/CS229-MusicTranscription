@@ -33,7 +33,6 @@ def transition_probability(fbefore, fafter):
     else:
         return 1.0
 
-
 # Get bin number from frequency using formula
 # n = floor(log(2^(57/12)*f/f0)/ log(\sqrt[12]{2})
 # why adding 2^(57/12): to make the output non-negative
@@ -43,11 +42,6 @@ def getBinFromFrequency(frequency, base = 440.0):
 # Get frequency from bin using the formula
 def getFrequencyFromBin(bin, base = 440.0):
 	return base * math.pow(2.0, (bin - 58) / 12.0)
-
-# Generate the range of frequencies using formula
-# f_n = f_0 * \sqrt[12]{2}^n
-def generateFrequency(n = 57, base = 440.0):
-    return [getFrequencyFromBin(i) for i in range(-n, n + 1)]
 
 class PitchContour(CSP):
     def __init__(self):
@@ -116,7 +110,8 @@ class PitchContour(CSP):
 # Learn the transition probability from the data with laplace smoothing of parameter alpha
 # Data contains N lines that contains the sequence of frequencies.
 # Perform learning by counting each transitions and normalizing
-def trainTransition(data, frequencies,  alpha=1):
+# Save the transitions in file
+def trainTransition(data, frequencies,  outputFile, alpha=1):
     # Dictionary containing all values of function (fbefore, fafter) -> probability
     transitionProb = collections.defaultdict(float)
     # Dictionary containing counts of function (fbefore)
@@ -134,4 +129,4 @@ def trainTransition(data, frequencies,  alpha=1):
     for (i,j), _ in transitionProb.items():
         if counts[i] > 0:
             transitionProb[(i,j)] *= (1.0 / counts[i])
-    return transitionProb
+    np.save(outputFile, transitionProb)

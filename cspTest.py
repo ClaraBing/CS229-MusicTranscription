@@ -6,17 +6,13 @@ class PitchContourTest(unittest.TestCase):
 
     def test_freqbin(self):
         bin = getBinFromFrequency(440.0)
-        self.assertEqual(bin, 0)
-        self.assertEqual(getBinFromFrequency(523), 3)
-
-    def test_freq(self):
-        frequencies = generateFrequency()
-        self.assertEqual(frequencies[57], 440.0)
-        self.assertEqual(round(frequencies[0]), 16)
+        self.assertEqual(bin, 58)
+        self.assertEqual(getBinFromFrequency(523), 61)
 
     def test_training(self):
         data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
-        probabilities = trainTransition(data, range(5))
+        trainTransition(data, range(5), "train.npy")
+        probabilities = np.load("train.npy").item()
         # Verify that all probabilities sum to 1.
         for i in range(5):
             count = 0
@@ -52,7 +48,7 @@ class PitchContourTest(unittest.TestCase):
 
     def test_both(self):
         data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
-        transition = trainTransition(data, range(5))
+        transition = np.load("train.npy").item()
         pitch = PitchContour()
         K = 2
         N = 4
