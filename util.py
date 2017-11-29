@@ -1,8 +1,8 @@
 import csv
-import librosa
-import librosa.display
 import matplotlib
 matplotlib.use('Agg')
+import librosa
+import librosa.display
 import matplotlib.pylab as plt
 from midiutil.MidiFile import MIDIFile
 import numpy as np
