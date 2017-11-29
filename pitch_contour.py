@@ -4,6 +4,22 @@ import sys
 import collections, util, copy
 from csp import *
 
+# Get bin number from frequency using formula
+# n = floor(log(2^(57/12)*f/f0)/ log(\sqrt[12]{2})
+# why adding 2^(57/12): to make the output non-negative
+def getBinFromFrequency(frequency, base = 440.0):
+    if frequency == 0.0:
+        return 0
+    else:
+        return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0)))) + 58
+
+# Get frequency from bin using the formula
+def getFrequencyFromBin(bin, base = 440.0):
+    if bin == 0:
+        return 0.0
+    else:
+        return base * math.pow(2.0, (bin - 58) / 12.0)
+
 # Laplace distribution evaluation for a change of pitch period between two frames.
 # Enforces temporal continuity between two adjacent states.
 def laplaceDistribution(delta, mu=0.4, sigma=2.4):
@@ -20,34 +36,20 @@ def pdf(mean, std, value):
 # Input: Integer K,
 # probabilities: array of size K of the normalized probabilities for the K most probable frequencies
 # given by the CNN.
-# frequencies: array of size K with the values of the frequencies
-# variances: array of size K with the values of the standard deviation
-def gaussianMixtureModelDistribution(observation, K, probabilities, frequencies, variances):
-    normals = [pdf(frequencies[i], variances[i], observation) for i in range(K)]
+# bins: array of size K with the values of possible bins
+# variance is defaulted to 0.5 as the bins are integers.
+def gaussianMixtureModelDistribution(observation, K, probabilities, bins):
+    normals = [pdf(bins[i], 0.5, observation) for i in range(K)]
     return np.sum(np.multiply(normals, probabilities))
 
-# Default transition probability function between two frequencies
-def transition_probability(fbefore, fafter):
+# Default transition probability function between two bins
+def transition_probability(binbefore, binafter):
+    fbefore = getFrequencyFromBin(binbefore)
+    fafter = getFrequencyFromBin(binafter)
     if fbefore > 0 and fafter > 0:
         return laplaceDistribution(abs(1.0 / fbefore- 1.0 / fafter))
     else:
-        return 1.0
-
-
-# Get bin number from frequency using formula
-# n = floor(log(2^(57/12)*f/f0)/ log(\sqrt[12]{2})
-# why adding 2^(57/12): to make the output non-negative
-def getBinFromFrequency(frequency, base = 440.0):
-    return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0)))) + 58
-
-# Get frequency from bin using the formula
-def getFrequencyFromBin(bin, base = 440.0):
-	return base * math.pow(2.0, (bin - 58) / 12.0)
-
-# Generate the range of frequencies using formula
-# f_n = f_0 * \sqrt[12]{2}^n
-def generateFrequency(n = 57, base = 440.0):
-    return [getFrequencyFromBin(i) for i in range(-n, n + 1)]
+        return 1.0 / 109 # this is the emission probability starting from 0.0
 
 class PitchContour(CSP):
     def __init__(self):
@@ -55,10 +57,6 @@ class PitchContour(CSP):
         self.probStart = None
         self.probTrans = None
         self.probEmission = None
-
-    # Set ranges of frequencies that are possible.
-    def setRange(self, ranges):
-        self.range = ranges
 
     # Set the start probability of the start state
     def setStartProbability(self, probability):
@@ -75,13 +73,12 @@ class PitchContour(CSP):
     # Set number of notes to be determined in the pitch contour.
     # Probabilities is a N x K matrix, each line represents the probabilities for
     # the K most probable pitches for the note.
-    # Frequencies is N x K
-    # Variances is N x K
-    def setNotes(self, N, K, probabilities, frequencies, variances):
+    # Bins is N x K and values are between 0 and 108.
+    def setNotes(self, N, K, probabilities, bins):
         # Set emission probability to default if nothing was specified
         if self.probEmission is None:
             probEmission = lambda i : lambda v : gaussianMixtureModelDistribution(v, K, \
-                probabilities[i], frequencies[i], variances[i])
+                probabilities[i], bins[i])
         else:
             probEmission = self.probEmission
         # Set transition probability to laplacian model is nothin was specified
@@ -91,12 +88,13 @@ class PitchContour(CSP):
             probTrans = self.probTrans
         # Set start probability to uniform if nothing was specified
         if self.probStart is None:
-            probStart = lambda v : 1.0 / len(self.range)
+            probStart = lambda v : 1.0 / 109
         else:
             probStart = self.probStart
 
         for i in range(N):
-            self.add_variable(i, self.range)
+            # Add variable and constraint that variable is in the set of bins
+            self.add_variable(i, bins[i])
             self.add_unary_factor(i, probEmission(i))
             if i > 0:
                 self.add_binary_factor(i-1, i, probTrans)
@@ -114,17 +112,19 @@ class PitchContour(CSP):
         print (self.solutions)
 
 # Learn the transition probability from the data with laplace smoothing of parameter alpha
-# Data contains N lines that contains the sequence of frequencies.
+# Data contains N lines that contains the sequence of bins.
 # Perform learning by counting each transitions and normalizing
-def trainTransition(data, frequencies,  alpha=1):
+# Save the transitions in file
+def trainTransition(data, bins,  outputFile, alpha=1):
     # Dictionary containing all values of function (fbefore, fafter) -> probability
     transitionProb = collections.defaultdict(float)
     # Dictionary containing counts of function (fbefore)
     counts = collections.defaultdict(int)
-    for i in frequencies:
-        for j in frequencies:
+
+    for i in bins:
+        for j in bins:
             transitionProb[(i,j)] = alpha
-        counts[i] += len(frequencies) * alpha
+        counts[i] += len(bins) * alpha
     # Count
     for i in range(len(data)):
         for j in range(1, len(data[i])):
@@ -134,4 +134,4 @@ def trainTransition(data, frequencies,  alpha=1):
     for (i,j), _ in transitionProb.items():
         if counts[i] > 0:
             transitionProb[(i,j)] *= (1.0 / counts[i])
-    return transitionProb
+    np.save(outputFile, transitionProb)

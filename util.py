@@ -1,12 +1,13 @@
+import csv
+import librosa
+import librosa.display
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pylab as plt
+from midiutil.MidiFile import MIDIFile
 import numpy as np
-import librosa
-import librosa.display
-import csv
-import pitch_contour
-
+import os
+from pitch_contour import *
 # Function list:
 # extract_pitch_max: keep only max (magnitude) pitches at each time interval
 # plot: pitches to plot
@@ -14,7 +15,7 @@ import pitch_contour
 # load_txt
 # wav2spec_data / wav2spec_demo: generate spectrograms from wav files, for data (slices) or demo (entire audio)
 # read_melody
-
+# outputMIDI
 
 
 # Input:
@@ -114,29 +115,57 @@ def wav2spec_demo(data_dir, audioName, fext, outDir):
 
 
 
-######################
-#    Data Process    #
-######################
+#####################
+#  Data processing  #
+#####################
 
-# def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"):
-#     csv_file = dir+folder_name+"_MELODY1.csv"
-#     pitch_bin_list = []
-#     pitch_freq_list = []
-#     with open(csv_file) as f:
-#         reader = csv.DictReader(f)
-#         count = 0
-#         for row in reader:
-#             #print(row,row.keys())
-#             # take every other note to match with the spectrogram's sampling rate
-#             if (count%2!=0):
-#                 count+=1
-#                 continue
-#             newFrequency = float(list(row.values())[0])
-#             if newFrequency > 0:
-#                 #newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
-#                 newFrequency = float(list(row.values())[0])
-#                 pitch_bin_list.append(getBinFromFrequency(newFrequency))
-# 		# print(newFrequency)
-#             pitch_freq_list.append(newFrequency)
-#             count+=1
-#     return pitch_bin_list, pitch_freq_list
+def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sampling_rate = 2):
+
+    csv_file = dir+folder_name+"_MELODY1.csv"
+    pitch_bin_list = []
+    pitch_freq_list = []
+    with open(csv_file) as f:
+        reader = csv.DictReader(f)
+        count = 0
+        for row in reader:
+            #Using a sampling rate of two times the original sampling.
+            if count%sampling_rate:
+                count+=1
+                continue
+            # print(row)
+            newFreq = float(list(row.values())[0])
+            # Note: comparing float 0.0 to 0 results in **False**
+            if newFreq > 0:
+                pitch_bin_list.append(getBinFromFrequency(newFreq))
+            else:
+                pitch_bin_list.append(0)
+            pitch_freq_list.append(newFreq)
+            count+=1
+    return pitch_bin_list, pitch_freq_list
+
+
+###################
+# Post-processing #
+###################
+
+# Input: N number of notes,
+# frequencies: array of size N with frequencies in Hz
+# output_name: name of the file to be saved
+# duration of each notes in s.
+def outputMIDI(N, frequencies, output_name,  duration = 1):
+    # Creates a MIDI file with one track
+    MyMIDI = MIDIFile(1)
+    track = 0
+    time = 0
+    MyMIDI.addTrackName(track, time, output_name)
+    MyMIDI.addTempo(track,time,120)
+    for i in range(N):
+        # Ignore frequencies 0, this means there's a silence
+        if frequencies[i] > 0:
+            midiNote = int(round(21 + 12 * np.log(frequencies[i]/ 27.5) / np.log(2)))
+            MyMIDI.addNote(track, 0, midiNote, time, duration, 100)
+        time += duration
+
+    binfile = open("midiOutput/"+ output_name + ".mid", 'wb')
+    MyMIDI.writeFile(binfile)
+    binfile.close()

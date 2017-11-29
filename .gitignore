@@ -4,5 +4,8 @@ output_model/
 pitch_plots/
 *.pyc
 *.log
+*.err
 *.error
 *.swp
+*.tar
+*.csv

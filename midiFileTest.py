@@ -1,5 +1,4 @@
-from outputMidi import *
-from read_melody import *
+from util import outputMIDI, read_melody
 import numpy as np
 
 name = 'AimeeNorwich_Child'
