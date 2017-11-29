@@ -37,11 +37,17 @@ def transition_probability(fbefore, fafter):
 # n = floor(log(2^(57/12)*f/f0)/ log(\sqrt[12]{2})
 # why adding 2^(57/12): to make the output non-negative
 def getBinFromFrequency(frequency, base = 440.0):
-    return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0)))) + 58
+    if frequency == 0.0:
+        return 0
+    else:
+        return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0)))) + 58
 
 # Get frequency from bin using the formula
 def getFrequencyFromBin(bin, base = 440.0):
-	return base * math.pow(2.0, (bin - 58) / 12.0)
+    if bin == 0:
+        return 0.0
+    else:
+	    return base * math.pow(2.0, (bin - 58) / 12.0)
 
 class PitchContour(CSP):
     def __init__(self):
