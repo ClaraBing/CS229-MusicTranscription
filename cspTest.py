@@ -47,7 +47,7 @@ class PitchContourTest(unittest.TestCase):
         pitch = PitchContour()
         K = 2
         N = 4
-        frequencies = [
+        bins = [
         [1, 4],
         [2, 3],
         [3, 1],
@@ -60,7 +60,7 @@ class PitchContourTest(unittest.TestCase):
         [1, 0]
         ]
         pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
-        pitch.setNotes(N, K, probabilities, frequencies)
+        pitch.setNotes(N, K, probabilities, bins)
         solutionCSP = pitch.solve()
         solution = {0 : 1, 1: 2, 2: 3, 3: 2}
         self.assertTrue(solution == solutionCSP)

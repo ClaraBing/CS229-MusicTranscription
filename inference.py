@@ -26,7 +26,7 @@ trained_cnn = Net()
 trained_cnn.load_state_dict(torch.load(cnn_weights))
 
 K = 5
-frequencies = []
+bins = []
 probabilities = []
 N = len(os.listdir(imageOutputDirectory)) # Number of pitches
 
@@ -37,14 +37,13 @@ for i in range(N):
     data = Variable(image).type(torch.FloatTensor)
     output = model(data).numpy()
     bins = np.argsort(-output)[:K] # only get K first bins
-    frequencies.append([getFrequencyFromBin(bins[i]) for i in range(K)])
     probabilities.append([np.exp(output[bins])])
 
 # Initialize Pitch Contour
 transitions = np.load(trained_mle).item()
 pitch_contour = PitchContour()
-pitch_contour.setRange([getFrequencyFromBin(i) for i in range(109)])
-pitch_contour.setTransitionProbability(lambda f1, f2 : transitions[(f1, f2)])
+pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
+pitch_contour.setNotes(N, K, probabilities, bins)
 solution = pitch_contour.solve()
 
 # Evaluate

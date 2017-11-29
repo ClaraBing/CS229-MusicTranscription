@@ -112,18 +112,19 @@ class PitchContour(CSP):
         print (self.solutions)
 
 # Learn the transition probability from the data with laplace smoothing of parameter alpha
-# Data contains N lines that contains the sequence of frequencies.
+# Data contains N lines that contains the sequence of bins.
 # Perform learning by counting each transitions and normalizing
 # Save the transitions in file
-def trainTransition(data, frequencies,  outputFile, alpha=1):
+def trainTransition(data, bins,  outputFile, alpha=1):
     # Dictionary containing all values of function (fbefore, fafter) -> probability
     transitionProb = collections.defaultdict(float)
     # Dictionary containing counts of function (fbefore)
     counts = collections.defaultdict(int)
-    for i in frequencies:
-        for j in frequencies:
+
+    for i in bins:
+        for j in bins:
             transitionProb[(i,j)] = alpha
-        counts[i] += len(frequencies) * alpha
+        counts[i] += len(bins) * alpha
     # Count
     for i in range(len(data)):
         for j in range(1, len(data[i])):
