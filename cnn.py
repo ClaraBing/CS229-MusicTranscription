@@ -24,8 +24,8 @@ parser.add_argument('--load-model', type=str, default=None,
                     help='Path to the pretrained model')
 parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 32)')
-parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                    help='input batch size for testing (default: 1000)')
+parser.add_argument('--test-batch-size', type=int, default=32, metavar='N',
+                    help='input batch size for testing (default: 32)')
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
@@ -76,7 +76,7 @@ annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELOD
 #                transforms.ToTensor(),
 #                transforms.Normalize((0.1307,), (0.3081,))
 #                ]))
-test_set = PitchEstimationDataSet(annotations_test, 'root/data/test')
+test_set = PitchEstimationDataSet(annotations_test, '/root/data/test')
 test_loader = DataLoader(test_set,
     batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
@@ -138,7 +138,7 @@ def validate(data_loader, model, criterion):
     for batch_idx, dictionary in enumerate(data_loader):
         batch_start = time()
 
-        data, target = Variable(dictionary['image']).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
+        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
 
@@ -240,5 +240,6 @@ if __name__ == '__main__':
         # testing
         pretrained_dict = torch.load(args.load_model)['state_dict']
         model.load_state_dict(pretrained_dict)
+        model.cuda()
         # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-        validate(test_loader, test_loader, criterion)
+        validate(test_loader, model, criterion)
