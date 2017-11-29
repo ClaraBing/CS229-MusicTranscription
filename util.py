@@ -1,12 +1,13 @@
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pylab as plt
-import numpy as np
+import csv
 import librosa
 import librosa.display
-import csv
+import matplotlib
+import matplotlib.pylab as plt
+from midiutil.MidiFile import MIDIFile
+matplotlib.use('Agg')
+import numpy as np
+import os
 import pitch_contour
-
 # Function list:
 # extract_pitch_max: keep only max (magnitude) pitches at each time interval
 # plot: pitches to plot
@@ -14,7 +15,7 @@ import pitch_contour
 # load_txt
 # wav2spec_data / wav2spec_demo: generate spectrograms from wav files, for data (slices) or demo (entire audio)
 # read_melody
-
+# outputMIDI
 
 
 # Input:
@@ -127,3 +128,30 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
             pitch_list.append(newFrequency)
             count+=1
     return pitch_list
+
+
+###################
+# Post-processing #
+###################
+
+# Input: N number of notes,
+# frequencies: array of size N with frequencies in Hz
+# output_name: name of the file to be saved
+# duration of each notes in s.
+def outputMIDI(N, frequencies, output_name,  duration = 1):
+    # Creates a MIDI file with one track
+    MyMIDI = MIDIFile(1)
+    track = 0
+    time = 0
+    MyMIDI.addTrackName(track, time, output_name)
+    MyMIDI.addTempo(track,time,120)
+    for i in range(N):
+        # Ignore frequencies 0, this means there's a silence
+        if frequencies[i] > 0:
+            midiNote = int(round(21 + 12 * np.log(frequencies[i]/ 27.5) / np.log(2)))
+            MyMIDI.addNote(track, 0, midiNote, time, duration, 100)
+        time += duration
+
+    binfile = open("midiOutput/"+ output_name + ".mid", 'wb')
+    MyMIDI.writeFile(binfile)
+    binfile.close()
