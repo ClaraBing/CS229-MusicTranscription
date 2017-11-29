@@ -65,6 +65,17 @@ def load_txt(f_name):
 	fin = open(f_name, 'r')
 	return [line.strip().split(',') for line in fin.readlines()]
 
+#subsample array
+def subsample(array1, array2):
+	n1 = array1.shape[0]
+	n2 = array2.shape[0]
+	scale = n1/float(n2)
+	new_array = []
+	for i in range(n2):
+		j = int(scale*i)
+		new_array.append(array1[j])
+	new_array = np.asarray(new_array)
+	return new_array
 
 # Generate time slices of spectrogram, which will be used for CNN training
 # Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
@@ -107,23 +118,25 @@ def wav2spec_demo(data_dir, audioName, fext, outDir):
 #    Data Process    #
 ######################
 
-def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"):
-    csv_file = dir+folder_name+"_MELODY1.csv"
-    pitch_list = []
-    with open(csv_file) as f:
-        reader = csv.DictReader(f)
-        count = 0
-        for row in reader:
-            #print(row,row.keys())
-            if (count%2!=0):
-                count+=1
-                continue
-            newFrequency = 0.0
-            lst = list(row.values())
-            if float(lst[0]) > 0:
-                #newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
-                newFrequency = float(list(row.value())[0])
-		# print(newFrequency)
-            pitch_list.append(newFrequency)
-            count+=1
-    return pitch_list
+# def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"):
+#     csv_file = dir+folder_name+"_MELODY1.csv"
+#     pitch_bin_list = []
+#     pitch_freq_list = []
+#     with open(csv_file) as f:
+#         reader = csv.DictReader(f)
+#         count = 0
+#         for row in reader:
+#             #print(row,row.keys())
+#             # take every other note to match with the spectrogram's sampling rate
+#             if (count%2!=0):
+#                 count+=1
+#                 continue
+#             newFrequency = float(list(row.values())[0])
+#             if newFrequency > 0:
+#                 #newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
+#                 newFrequency = float(list(row.values())[0])
+#                 pitch_bin_list.append(getBinFromFrequency(newFrequency))
+# 		# print(newFrequency)
+#             pitch_freq_list.append(newFrequency)
+#             count+=1
+#     return pitch_bin_list, pitch_freq_list
