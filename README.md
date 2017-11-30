@@ -1,9 +1,10 @@
 # Automatic Melody Transcription
 Automatic melody transcription for multitrack (monophonic) audios. An input audio (`.wav`) is first segmented to short time intervals and transformed to corresponding spectrograms, on which a CNN is run to estimate the probabilities of a pitch present. Finally, with the estimated pitches as inputs, a Hidden Markov Model produces one or more most probable melodies.
 
+
 # Pipeline
 
-## Data Pre-processing
+## Part 0 - Data Pre-processing
 Generating spectrograms from input audios (`dataset2spec.py`).
 
 ## Part 1 (CS229) - CNN for pitch estimation
@@ -30,8 +31,10 @@ The saved result matrix is of size `N*109*2` and dimension 3, since there's no t
 e.g. mtrx\[0\]\[:\]\[0\] stores in descending order the probabilities for each of the 81 pitch bins at the first timestep of the first song, where the corresponding bin values (between 1-109) are stored in mtrx\[0\]\[:\]\[1\].
 
 
+
 ## Part 2 (CS221) - HMM for melody tracking
 (To do.)
+
 
 # References
 * *MedleyDB: A Multitrack Dataset for Annotation-Intensive MIR Research* by Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan Pablo, 2014
