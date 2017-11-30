@@ -31,6 +31,13 @@ def pdf(mean, std, value):
     y = (1.0 / (math.sqrt(2 * math.pi) * abs(std))) * math.exp(-u * u / 2.0)
     return y
 
+# Multinomial distribution function for a given value, probability vector and values
+def multinomial(value, probabilities, values):
+    if value in values:
+        return probabilities[values.tolist().index(value)]
+    else:
+        return 0.0
+
 # Gaussian Mixture Model evaluation for a state given the K most probables frequencies
 # observed by the CNN.
 # Input: Integer K,
@@ -77,8 +84,7 @@ class PitchContour(CSP):
     def setNotes(self, N, K, probabilities, bins):
         # Set emission probability to default if nothing was specified
         if self.probEmission is None:
-            probEmission = lambda i : lambda v : gaussianMixtureModelDistribution(v, K, \
-                probabilities[i], bins[i])
+            probEmission = lambda i : lambda v : multinomial(v, probabilities[i], bins[i])
         else:
             probEmission = self.probEmission
         # Set transition probability to laplacian model is nothin was specified

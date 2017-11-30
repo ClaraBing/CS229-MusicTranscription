@@ -26,18 +26,18 @@ class PitchContourTest(unittest.TestCase):
         flat_pitch = PitchContour()
         K = 2
         N = 4
-        frequencies = [
+        frequencies = np.array([
         [16, 15],
         [15, 14],
         [12, 13],
         [10, 12]
-        ]
-        probabilities = [
+        ])
+        probabilities = np.array([
         [0.1, 0.9],
         [0.1, 0.9],
         [0.45, 0.55],
         [0, 1]
-        ]
+        ])
         flat_pitch.setNotes(N, K, probabilities, frequencies)
         solutionCSP = flat_pitch.solve(mode="backtrack")
         solution = {0 : 15, 1: 14, 2: 13, 3: 12}
@@ -49,18 +49,18 @@ class PitchContourTest(unittest.TestCase):
         pitch = PitchContour()
         K = 2
         N = 4
-        bins = [
+        bins = np.array([
         [1, 4],
         [2, 3],
         [3, 1],
         [2, 4]
-        ]
-        probabilities = [
-        [0.9, 0.1],
-        [0.5, 0.5],
+        ])
+        probabilities = np.array([
+        [0.9, 0.21],
+        [0.5, 0.51],
         [0.45, 0.55],
         [1, 0]
-        ]
+        ])
         pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
         pitch.setNotes(N, K, probabilities, bins)
         solutionCSP = pitch.solve(mode="backtrack")
@@ -73,21 +73,21 @@ class PitchContourTest(unittest.TestCase):
         pitch = PitchContour()
         K = 2
         N = 4
-        bins = [
+        bins = np.array([
         [1, 4],
         [2, 3],
         [3, 1],
         [2, 4]
-        ]
-        probabilities = [
-        [0.9, 0.1],
+        ])
+        probabilities = np.array([
+        [0.9, 0.12],
         [0.5, 0.5],
         [0.45, 0.55],
         [1, 0]
-        ]
+        ])
         pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
         pitch.setNotes(N, K, probabilities, bins)
-        solutionCSP = pitch.solve()
+        solutionCSP = pitch.solve(mode="gibbs")
         solution = {0 : 1, 1: 2, 2: 3, 3: 2}
         self.assertTrue(solution == solutionCSP)
 

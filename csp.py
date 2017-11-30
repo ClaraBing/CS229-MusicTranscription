@@ -184,7 +184,7 @@ class GibbsSampling():
         currentWeight = csp.get_assignment_weight(currentAssignment)
         diff = 1
         iterations = 0
-        while diff > 0.000001:
+        while diff > 0.00000000000000000001:
             for var in csp.variables:
                 # unassign variable
                 currentAssignment.pop(var)
