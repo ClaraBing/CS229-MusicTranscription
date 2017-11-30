@@ -37,11 +37,11 @@ e.g. mtrx\[0\]\[:\]\[0\] stores in descending order the probabilities for each o
 
 
 # References
-* *MedleyDB: A Multitrack Dataset for Annotation-Intensive MIR Research* by Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan Pablo, 2014
-* [Deep salience representations for f0 estimation in polyphonic music](http://www.justinsalamon.com/uploads/4/3/9/4/4394963/bittner_deepsalience_ismir_2017.pdf) by Bittner, R and McFee, Brian and Salamon, Justin and Li, Peter and Bello, J., 2017.
-* *A Classification Approach to Melody Transcription* by Poliner, Graham E and Ellis, Daniel PW, 2005.
-* *Neural network based pitch tracking in very noisy speech* by Han, Kun and Wang, DeLiang, 2014.
-* *Convolutional neural network for robust pitch determination* by Su, Hong and Zhang, Hui and Zhang, Xueliang and Gao, Guanglai, ICASSP 2016.
-* *HMM-based multipitch tracking for noisy and reverberant speech* by Jin, Zhaozhang and Wang, DeLiang, IEEE 2011.
-* *Computer-aided Melody Note Transcription Using the Tony Software: Accuracy and Efficiency* by M. Mauch and C. Cannam and R. Bittner and G. Fazekas and J. Salamon and J. Dai and J. Bello and S. Dixon, 2015.
-* *Evaluation of pitch estimation in noisy speech for application in non-intrusive speech quality assessment* by D. Sharma and P. A. Naylor, 2009.
+* **MedleyDB: A Multitrack Dataset for Annotation-Intensive MIR Research** by Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan Pablo, 2014
+* **[Deep salience representations for f0 estimation in polyphonic music](http://www.justinsalamon.com/uploads/4/3/9/4/4394963/bittner_deepsalience_ismir_2017.pdf)** by Bittner, R and McFee, Brian and Salamon, Justin and Li, Peter and Bello, J., 2017.
+* **A Classification Approach to Melody Transcription** by Poliner, Graham E and Ellis, Daniel PW, 2005.
+* **Neural network based pitch tracking in very noisy speech** by Han, Kun and Wang, DeLiang, 2014.
+* **Convolutional neural network for robust pitch determination** by Su, Hong and Zhang, Hui and Zhang, Xueliang and Gao, Guanglai, ICASSP 2016.
+* **HMM-based multipitch tracking for noisy and reverberant speech** by Jin, Zhaozhang and Wang, DeLiang, IEEE 2011.
+* **Computer-aided Melody Note Transcription Using the Tony Software: Accuracy and Efficiency** by M. Mauch and C. Cannam and R. Bittner and G. Fazekas and J. Salamon and J. Dai and J. Bello and S. Dixon, 2015.
+* **Evaluation of pitch estimation in noisy speech for application in non-intrusive speech quality assessment** by D. Sharma and P. A. Naylor, 2009.
