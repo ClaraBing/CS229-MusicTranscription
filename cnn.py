@@ -127,9 +127,8 @@ def train(model, train_loader, criterion, epoch):
             torch.save(model, args.save_dir+save_name)
 
 
-def validate(data_loader, model, criterion, out=False):
-    if outfile:
-        outfile = open(outfile, 'w')
+def validate(data_loader, model, criterion, outfile=None):
+    out_mtrx = np.empty((len(data_loader), 109, 2))
 
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -152,10 +151,12 @@ def validate(data_loader, model, criterion, out=False):
         prec1, prec5 = accuracy(output.data, target.data, topk=(1,5))
         top1.update(prec1[0], data.size(0))
         top5.update(prec5[0], data.size(0))
-        # output top5 probabilities
-        if outfile:
-            prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
-            for prob, pitch_bin in zip(prob_list, pitch_bin_list):
+        # Save probabilities & corresponding pitch bins
+        probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
+        out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
+        out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
+            # prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
+            # for prob, pitch_bin in zip(prob_list, pitch_bin_list):
                 
 
 
@@ -175,6 +176,10 @@ def validate(data_loader, model, criterion, out=False):
           'Loss: {:f}\nPrec@1: {:f}\nPrec@5: {:f}'
           '\n================\n\n'.format(
           losses.avg, top1.avg, top5.avg))
+
+    if outfile:
+        np.save(outfile, out_mtrx)
+
     return top1.avg
 
 
@@ -250,4 +255,4 @@ if __name__ == '__main__':
         model.load_state_dict(pretrained_dict)
         model.cuda()
         # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-        validate(test_loader, model, criterion, 'tmp_prob.csv')
+        validate(test_loader, model, criterion, outfile='test.npy')

@@ -9,3 +9,4 @@ pitch_plots/
 *.swp
 *.tar
 *.csv
+*.npy
