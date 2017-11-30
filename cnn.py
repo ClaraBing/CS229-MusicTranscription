@@ -127,7 +127,7 @@ def train(model, train_loader, criterion, epoch):
             torch.save(model, args.save_dir+save_name)
 
 
-def validate(data_loader, model, criterion, outfile=None):
+def validate(data_loader, model, criterion, out=False):
     if outfile:
         outfile = open(outfile, 'w')
 
