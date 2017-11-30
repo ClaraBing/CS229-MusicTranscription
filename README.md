@@ -6,6 +6,7 @@ Automatic melody transcription for multitrack (monophonic) audios. An input audi
 
 ## Part 0 - Data Pre-processing
 Generating spectrograms from input audios (`dataset2spec.py`).
+Note that the sampling rate of the spectrograms is half the rate of the annotations; i.e. we should skip every other line in the annotations (e.g. refer to `util.py/read_melody` where we keep track of `count % sr_ratio`)
 
 ## Part 1 (CS229) - CNN for pitch estimation
 
