@@ -135,7 +135,7 @@ class CSP(object):
         """
         w = 1.0
         computedBinaryFactors = []
-        variables = assignment.keys()
+        variables = list(assignment)
         for i in range(len(variables)):
             var1 = variables[i]
             if self.unaryFactors[var1]:
@@ -168,7 +168,7 @@ class CSP(object):
         if self.unaryFactors[var]:
             w *= self.unaryFactors[var][val]
             if w == 0: return w
-        for var2, factor in self.binaryFactors[var].iteritems():
+        for var2, factor in self.binaryFactors[var].items():
             if var2 not in assignment: continue  # Not assigned yet
             w *= factor[val][assignment[var2]]
             if w == 0: return w
@@ -198,8 +198,8 @@ class GibbsSampling():
             currentWeight = newWeight
             iterations += 1
 
-        print ("Converged in %d iterations") % iterations
-        print (" Optimal weight is %f") % currentWeight
+        print (("Converged in %d iterations") % iterations)
+        print ((" Optimal weight is %f") % currentWeight)
         return currentAssignment
 
 class BacktrackingSearch():
@@ -276,6 +276,7 @@ class BacktrackingSearch():
         """
 
         self.numOperations += 1
+        print (weight)
         assert weight > 0
         if numAssigned == self.csp.numVars:
             # A satisfiable solution have been found. Update the statistics.

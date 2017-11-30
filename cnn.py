@@ -24,7 +24,7 @@ parser.add_argument('--load-model', type=str, default=None,
                     help='Path to the pretrained model')
 parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 32)')
-parser.add_argument('--test-batch-size', type=int, default=32, metavar='N',
+parser.add_argument('--test-batch-size', type=int, default=1, metavar='N',
                     help='input batch size for testing (default: 32)')
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
@@ -67,8 +67,8 @@ train_loader = DataLoader(training_set,
 # val
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
 val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
-val_loader = DataLoader(val_set,
-    batch_size = args.batch_size, shuffle = True, **kwargs)
+val_loader = DataLoader(val_set, shuffle=False, **kwargs)
+#    batch_size = args.batch_size, shuffle = True, **kwargs)
 
 # test
 annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/test/'
@@ -256,4 +256,4 @@ if __name__ == '__main__':
         model.load_state_dict(pretrained_dict)
         model.cuda()
         # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-        validate(test_loader, model, criterion, outfile='test.npy')
+        validate(val_loader, model, criterion, outfile='val.npy')

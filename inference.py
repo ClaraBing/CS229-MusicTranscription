@@ -17,6 +17,8 @@ extension = "wav" # Extension of audio file
 imageOutputDirectory = "/root/inference/"+filename+"/" # Directory containing spectogram images
 cnn_weights = "output_model/conv5_13/model_conv5_train_epoch9.pt" # Path to saved weights of CNN
 trained_mle = "transitions_mle.npy" # Path to saves parameters for HMM
+saved_probabilities = "probabilities_"+filename
+saved_bins = "bins_"+filename
 
 # Convert audio file to spectogram slices
 print ("Converting the audio to spectogram images ...")
@@ -33,21 +35,37 @@ trained_cnn.load_state_dict(weights['state_dict'])
 print("Done.")
 
 K = 5
-bins = []
-probabilities = []
 N = len(os.listdir(imageOutputDirectory)) # Number of pitches
+bins = np.zeros((N,K))
+probabilities = np.zeros((N,K))
 
 # Naively perform inference on each of the timeframes and save results
-print ("Pitch estimation on each frame .")
-for i in range(N):
-    print(".")
-    path = '{:s}spec_{:s}_{:d}.png'.format(imageOutputDirectory, filename+"_MIX", i)
-    image = torch.from_numpy(np.transpose(ndimage.imread(path, mode='RGB'), (2,0,1)))
-    data = Variable(image).type(torch.FloatTensor)
-    output = trained_cnn(data).numpy()
-    bins = np.argsort(-output)[:K] # only get K first bins
-    probabilities.append([np.exp(output[bins])])
-print("Done.")
+cnn_inf = False
+if cnn_inf:
+  print ("Pitch estimation on each frame .")
+  for i in range(N):
+      print(("%d out of %d") % (i, N-1))
+      path = '{:s}spec_{:s}_{:d}.png'.format(imageOutputDirectory, filename+"_MIX", i)
+      print (path)
+      image = torch.from_numpy(np.transpose(ndimage.imread(path, mode='RGB'), (2,0,1)))
+      data = Variable(image).type(torch.FloatTensor)
+      data = data.unsqueeze(0)
+      output = trained_cnn(data).data.numpy()
+      bin = np.argsort(-output)[0][:K].reshape((1,K))
+      bins[i] = bin
+      probabilities[i] = np.exp(output[0][bin])
+      probabilities[i] /= np.sum(probabilities[i])
+  print("Done.")
+  np.save(saved_probabilities, probabilities)
+  np.save(saved_bins, bins)
+else:
+  probabilities = np.load(saved_probabilities+".npy")
+  bins = np.load(saved_bins+".npy")
+
+print (probabilities[10:40])
+print (bins[10:40])
+print (probabilities[1000:1010])
+print (bins[1000:1010])
 
 # Initialize Pitch Contour
 print ("Pitch tracking...")
@@ -64,4 +82,4 @@ print ("Done.")
 # Output MIDI file
 print ("Save as MIDI file.")
 outputMIDI(N, solution, filename+'_result',  duration = 0.3)
-print ("Done. The file was saved at midiOutput/"+filename+"_result")
+print ("Done. The file was saved at midiOutput/"+filename+"_result.mid")
