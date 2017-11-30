@@ -30,10 +30,11 @@ class PitchEstimationDataSet(Dataset):
         self.currentCount = 0
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
+                # The ordering/lengths of songs can be determined following the code below:
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
-                new_bin_melody, _ = read_melody(audioName, annotations_dir)
-                new_bin_melody = new_bin_melody[:-1]
+                new_bin_melody, _ = read_melody(audioName, annotations_dir) # len(new_bin_melody) denotes the length of a song
+                new_bin_melody = new_bin_melody[:-1] # remove the last entry to avoid errors at boundaries (dirty but fast @v@)
                 self.lengths.append(len(new_bin_melody)+ self.currentCount)
                 self.currentCount += len(new_bin_melody)
                 self.pitches.append(new_bin_melody)
