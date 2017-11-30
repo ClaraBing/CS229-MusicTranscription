@@ -57,7 +57,7 @@ class PitchEstimationDataSet(Dataset):
         img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_MIX_"+str(pitchId)+".png")
         # np.transpose: change from H*W*C to C*H*W
         image = np.transpose(ndimage.imread(img_name, mode='RGB'), (2,0,1))
-        sample = {'image': image, 'frequency': self.pitches[songId][pitchId], 'song':songName, 'image_path':img_name, 'idx':idx}
+        sample = {'image': image, 'frequency': self.pitches[songId][pitchId]}# , 'song':songName, 'image_path':img_name, 'idx':idx}
 
         if self.transform:
             sample = self.transform(sample)

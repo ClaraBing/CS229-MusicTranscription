@@ -77,7 +77,8 @@ annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELOD
 #                transforms.Normalize((0.1307,), (0.3081,))
 #                ]))
 test_set = PitchEstimationDataSet(annotations_test, '/root/data/test')
-test_loader = DataLoader(test_set, shuffle=True, **kwargs) # batch = 1
+test_loader = DataLoader(test_set, shuffle=False, # do not shuffle: the original ordering is needed for matching w/ annotations (for HMM)
+    batch_size = args.test_batch_size, **kwargs) # batch = 1
 
 model = Net()
 if args.cuda:
