@@ -77,8 +77,7 @@ annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELOD
 #                transforms.Normalize((0.1307,), (0.3081,))
 #                ]))
 test_set = PitchEstimationDataSet(annotations_test, '/root/data/test')
-test_loader = DataLoader(test_set,
-    batch_size=args.test_batch_size, shuffle=True, **kwargs)
+test_loader = DataLoader(test_set, shuffle=True, **kwargs) # batch = 1
 
 model = Net()
 if args.cuda:
@@ -128,7 +127,10 @@ def train(model, train_loader, criterion, epoch):
             torch.save(model, args.save_dir+save_name)
 
 
-def validate(data_loader, model, criterion):
+def validate(data_loader, model, criterion, outfile=None):
+    if outfile:
+        outfile = open(outfile, 'w')
+
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1, top5 = AverageMeter(), AverageMeter()
@@ -150,6 +152,12 @@ def validate(data_loader, model, criterion):
         prec1, prec5 = accuracy(output.data, target.data, topk=(1,5))
         top1.update(prec1[0], data.size(0))
         top5.update(prec5[0], data.size(0))
+        # output top5 probabilities
+        if outfile:
+            prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
+            for prob, pitch_bin in zip(prob_list, pitch_bin_list):
+                
+
 
         batch_time.update(time() - batch_start)
         
@@ -242,4 +250,4 @@ if __name__ == '__main__':
         model.load_state_dict(pretrained_dict)
         model.cuda()
         # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-        validate(test_loader, model, criterion)
+        validate(test_loader, model, criterion, 'tmp_prob.csv')
