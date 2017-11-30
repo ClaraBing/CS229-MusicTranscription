@@ -1,6 +1,12 @@
 # Automatic Melody Transcription
 Automatic melody transcription for multitrack (monophonic) audios. An input audio (`.wav`) is first segmented to short time intervals and transformed to corresponding spectrograms, on which a CNN is run to estimate the probabilities of a pitch present. Finally, with the estimated pitches as inputs, a Hidden Markov Model produces one or more most probable melodies.
 
+# Dependencies 
+The project depends on the following packages 
+- PyTorch
+- Matplotlib
+- MIDIFile
+- Librosa 
 
 # Pipeline
 
@@ -34,8 +40,28 @@ e.g. mtrx\[0\]\[:\]\[0\] stores in descending order the probabilities for each o
 
 
 ## Part 2 (CS221) - HMM for melody tracking
-(To do.)
 
+### Training the transition probabilities 
+The transition probabilities are estimated on the training data set using smoothed maximum likelihood estimates of the probability of transitioning from bin i to bin j. To launch the training 
+```
+python train_mle.py
+```
+This will perform the MLE counting on the annotations for the training set and save the probabilities in `transitions_mle.npy` as a dictionary. 
+
+### Implementation details
+Pitch tracking is modeled as Hidden Markov Model that we solve using Gibbs Sampling. The relevant code for the underlying CSP structure is in `csp.py`. The starter code was provided as part of a CS221 assignment that we complemented with our own implementation of backtracking search and gibbs sampling to find an optimal assignment. 
+
+`Pitch_Contour.py` extends the CSP class. Custom emission and transition probabilities for the pitch tracking problem can be set using `set<Emission|Start|Transition>Probability()`. By default, the emission probability is distributed following a multinomial, the transition probability is distributed following a laplacian distribution and the start probability is uniformly distributed.
+
+Calling `solve()` computes an optimal assignment. The default method is Gibbs sampling. To use backtracking use `solve(mode='backtrack')`. 
+
+
+## Part 3 - Inference
+To test the entire pipeline, 
+``` 
+python inference.py
+```
+This will run the entire inference process on a given song by computing the spectogram images, saving them in a directory, then performing pitch estimation on each time frame using the pre-trained CNN and finally perform pitch-tracking. The result will then be converted into a MIDI file. 
 
 # References
 * **MedleyDB: A Multitrack Dataset for Annotation-Intensive MIR Research** by Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan Pablo, 2014
