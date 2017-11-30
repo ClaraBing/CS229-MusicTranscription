@@ -28,7 +28,7 @@ The saved result matrix is of size `N*109*2` and dimension 3, since there's no t
 
 3. the third dimension is of size 2: position 0 stores the probability, and position 1 stores the corresponding pitch bin.
 
-e.g. mtrx\[0\]\[:\]\[0\] stores in descending order the probabilities for each of the 81 pitch bins at the first timestep of the first song, where the corresponding bin values (between 0-108) are stored in mtrx\[0\]\[:\]\[1\].
+e.g. mtrx\[0\]\[:\]\[0\] stores in descending order the probabilities for each of the 81 pitch bins at the first timestep of the first song, where the corresponding bin values (between 0-108, 0 being empty pitch) are stored in mtrx\[0\]\[:\]\[1\].
 
 
 
