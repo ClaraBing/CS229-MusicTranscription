@@ -1,7 +1,9 @@
 import unittest
 
 from pitch_contour import *
+import numpy as np
 
+np.random.seed(10)
 class PitchContourTest(unittest.TestCase):
 
     def test_freqbin(self):
@@ -37,11 +39,35 @@ class PitchContourTest(unittest.TestCase):
         [0, 1]
         ]
         flat_pitch.setNotes(N, K, probabilities, frequencies)
-        solutionCSP = flat_pitch.solve()
+        solutionCSP = flat_pitch.solve(mode="backtrack")
         solution = {0 : 15, 1: 14, 2: 13, 3: 12}
         self.assertTrue(solution == solutionCSP)
 
     def test_both(self):
+        data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
+        transition = np.load("train.npy").item()
+        pitch = PitchContour()
+        K = 2
+        N = 4
+        bins = [
+        [1, 4],
+        [2, 3],
+        [3, 1],
+        [2, 4]
+        ]
+        probabilities = [
+        [0.9, 0.1],
+        [0.5, 0.5],
+        [0.45, 0.55],
+        [1, 0]
+        ]
+        pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
+        pitch.setNotes(N, K, probabilities, bins)
+        solutionCSP = pitch.solve(mode="backtrack")
+        solution = {0 : 1, 1: 2, 2: 3, 3: 2}
+        self.assertTrue(solution == solutionCSP)
+
+    def test_gibbs(self):
         data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
         transition = np.load("train.npy").item()
         pitch = PitchContour()

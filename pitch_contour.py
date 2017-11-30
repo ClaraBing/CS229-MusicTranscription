@@ -101,11 +101,15 @@ class PitchContour(CSP):
             else:
                 self.add_unary_factor(i, probStart)
 
-    def solve(self):
-        search = BacktrackingSearch()
-        search.solve(self)
-        search.print_stats()
-        self.solutions = search.optimalAssignment
+    def solve(self, mode = "gibbs"):
+        if mode == "backtrack":
+            search = BacktrackingSearch()
+            search.solve(self)
+            search.print_stats()
+            self.solutions = search.optimalAssignment
+        if mode == "gibbs":
+            gibbs = GibbsSampling()
+            self.solutions = gibbs.solve(self)
         return self.solutions
 
     def print_solution(self):

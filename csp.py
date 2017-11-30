@@ -129,6 +129,79 @@ class CSP(object):
                     assert i in currentTable and j in currentTable[i]
                     currentTable[i][j] *= table[i][j]
 
+    def get_assignment_weight(self, assignment):
+        """
+        Given a current assignment(can be partial), return the weight
+        """
+        w = 1.0
+        computedBinaryFactors = []
+        variables = assignment.keys()
+        for i in range(len(variables)):
+            var1 = variables[i]
+            if self.unaryFactors[var1]:
+                w *= self.unaryFactors[var1][assignment[var1]]
+            for j in range(i+1, (len(variables))):
+                var2 = variables[j]
+                if self.binaryFactors[var1]:
+                    if var2 in self.binaryFactors[var1].keys():
+                        w *= self.binaryFactors[var1][var2][assignment[var1]][assignment[var2]]
+        return w
+
+    def get_delta_weight(self, assignment, var, val):
+        """
+        Given a partial assignment, and a proposed new value for a variable,
+        return the change of weights after assigning the variable with the proposed
+        value.
+
+        @param assignment: A dictionary of current assignment. Unassigned variables
+            do not have entries, while an assigned variable has the assigned value
+            as value in dictionary. e.g. if the domain of the variable A is [5,6],
+            and 6 was assigned to it, then assignment[A] == 6.
+        @param var: name of an unassigned variable.
+        @param val: the proposed value.
+
+        @return w: Change in weights as a result of the proposed assignment. This
+            will be used as a multiplier on the current weight.
+        """
+        assert var not in assignment
+        w = 1.0
+        if self.unaryFactors[var]:
+            w *= self.unaryFactors[var][val]
+            if w == 0: return w
+        for var2, factor in self.binaryFactors[var].iteritems():
+            if var2 not in assignment: continue  # Not assigned yet
+            w *= factor[val][assignment[var2]]
+            if w == 0: return w
+        return w
+
+class GibbsSampling():
+    def solve(self, csp):
+        currentWeight = 0
+        currentAssignment = {}
+        # Generate initial assignment at random and compute weight
+        for var in csp.variables:
+            currentAssignment[var] = np.random.choice(csp.values[var])
+        currentWeight = csp.get_assignment_weight(currentAssignment)
+        diff = 1
+        iterations = 0
+        while diff > 0.000001:
+            for var in csp.variables:
+                # unassign variable
+                currentAssignment.pop(var)
+                # compute delta weights for all possible assinments
+                delta_weights = [csp.get_delta_weight(currentAssignment, var, val) for val in csp.values[var]]
+                # sample variable using weights
+                new_value = np.random.choice(csp.values[var], 1, p=delta_weights/np.sum(delta_weights))
+                currentAssignment[var] = new_value[0]
+            newWeight = csp.get_assignment_weight(currentAssignment)
+            diff = abs(currentWeight - newWeight)
+            currentWeight = newWeight
+            iterations += 1
+
+        print ("Converged in %d iterations") % iterations
+        print (" Optimal weight is %f") % currentWeight
+        return currentAssignment
+
 class BacktrackingSearch():
 
     def reset_results(self):
@@ -157,33 +230,6 @@ class BacktrackingSearch():
                 (self.numOptimalAssignments, self.optimalWeight, self.numOperations))
         else:
             print ("No solution was found.")
-
-    def get_delta_weight(self, assignment, var, val):
-        """
-        Given a CSP, a partial assignment, and a proposed new value for a variable,
-        return the change of weights after assigning the variable with the proposed
-        value.
-
-        @param assignment: A dictionary of current assignment. Unassigned variables
-            do not have entries, while an assigned variable has the assigned value
-            as value in dictionary. e.g. if the domain of the variable A is [5,6],
-            and 6 was assigned to it, then assignment[A] == 6.
-        @param var: name of an unassigned variable.
-        @param val: the proposed value.
-
-        @return w: Change in weights as a result of the proposed assignment. This
-            will be used as a multiplier on the current weight.
-        """
-        assert var not in assignment
-        w = 1.0
-        if self.csp.unaryFactors[var]:
-            w *= self.csp.unaryFactors[var][val]
-            if w == 0: return w
-        for var2, factor in self.csp.binaryFactors[var].iteritems():
-            if var2 not in assignment: continue  # Not assigned yet
-            w *= factor[val][assignment[var2]]
-            if w == 0: return w
-        return w
 
     def solve(self, csp, mcv = False, ac3 = False):
         """
@@ -258,7 +304,7 @@ class BacktrackingSearch():
         if not self.ac3:
             # When arc consistency check is not enabled.
             for val in ordered_values:
-                deltaWeight = self.get_delta_weight(assignment, var, val)
+                deltaWeight = self.csp.get_delta_weight(assignment, var, val)
                 if deltaWeight > 0:
                     assignment[var] = val
                     self.backtrack(assignment, numAssigned + 1, weight * deltaWeight)
@@ -268,7 +314,7 @@ class BacktrackingSearch():
             # Problem 1c: skeleton code for AC-3
             # You need to implement arc_consistency_check().
             for val in ordered_values:
-                deltaWeight = self.get_delta_weight(assignment, var, val)
+                deltaWeight = self.csp.get_delta_weight(assignment, var, val)
                 if deltaWeight > 0:
                     assignment[var] = val
                     # create a deep copy of domains as we are going to look
@@ -307,7 +353,7 @@ class BacktrackingSearch():
                 if var not in assignment:
                     count = 0
                     for p in self.domains[var]:
-                        if self.get_delta_weight(assignment, var, p) > 0:
+                        if self.csp.get_delta_weight(assignment, var, p) > 0:
                             count+=1
                     if count < min_count:
                         min_count = count
