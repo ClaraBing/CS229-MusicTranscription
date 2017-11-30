@@ -24,9 +24,10 @@ class PitchEstimationDataSet(Dataset):
         self.transform = transform
         # Load all CSVs and count number of frames in the total dataset
         self.pitches = []
-        self.lengths = []
+        self.lengths = [] #Cumulated lengths
         self.numberOfSongs = len(os.listdir(annotations_dir))
         self.songNames = []
+        self.songLengths = [] # Length of a song
         self.currentCount = 0
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
@@ -36,6 +37,7 @@ class PitchEstimationDataSet(Dataset):
                 new_bin_melody, _ = read_melody(audioName, annotations_dir) # len(new_bin_melody) denotes the length of a song
                 new_bin_melody = new_bin_melody[:-1] # remove the last entry to avoid errors at boundaries (dirty but fast @v@)
                 self.lengths.append(len(new_bin_melody)+ self.currentCount)
+                self.songLengths.append(len(new_bin_melody))
                 self.currentCount += len(new_bin_melody)
                 self.pitches.append(new_bin_melody)
                 # print (self.currentCount)

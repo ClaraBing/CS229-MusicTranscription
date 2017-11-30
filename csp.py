@@ -99,11 +99,6 @@ class CSP(object):
         try:
             assert var1 != var2
         except:
-            print ('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-            #print '!! Tip:                                                                       !!'
-            #print '!! You are adding a binary factor over a same variable...                  !!'
-            #print '!! Please check your code and avoid doing this.                               !!'
-            #print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             raise
 
         self.update_binary_factor_table(var1, var2,
@@ -184,7 +179,10 @@ class GibbsSampling():
         currentWeight = csp.get_assignment_weight(currentAssignment)
         diff = 1
         iterations = 0
-        while diff > 0.00000000000000000001:
+        print (currentWeight)
+        print (currentAssignment)
+        # At least 10 iterations
+        while diff > 0.0000001 or iterations < 10:
             for var in csp.variables:
                 # unassign variable
                 currentAssignment.pop(var)
