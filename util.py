@@ -1,13 +1,13 @@
 import csv
-import librosa
-import librosa.display
 import matplotlib
 matplotlib.use('Agg')
+import librosa
+import librosa.display
 import matplotlib.pylab as plt
 from midiutil.MidiFile import MIDIFile
 import numpy as np
 import os
-import pitch_contour
+from pitch_contour import *
 # Function list:
 # extract_pitch_max: keep only max (magnitude) pitches at each time interval
 # plot: pitches to plot
@@ -66,6 +66,17 @@ def load_txt(f_name):
 	fin = open(f_name, 'r')
 	return [line.strip().split(',') for line in fin.readlines()]
 
+#subsample array
+def subsample(array1, array2):
+	n1 = array1.shape[0]
+	n2 = array2.shape[0]
+	scale = n1/float(n2)
+	new_array = []
+	for i in range(n2):
+		j = int(scale*i)
+		new_array.append(array1[j])
+	new_array = np.asarray(new_array)
+	return new_array
 
 # Generate time slices of spectrogram, which will be used for CNN training
 # Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
@@ -104,30 +115,33 @@ def wav2spec_demo(data_dir, audioName, fext, outDir):
 
 
 
-######################
-#    Data Process    #
-######################
+#####################
+#  Data processing  #
+#####################
 
-def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/"):
+def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sampling_rate = 2):
+
     csv_file = dir+folder_name+"_MELODY1.csv"
-    pitch_list = []
+    pitch_bin_list = []
+    pitch_freq_list = []
     with open(csv_file) as f:
         reader = csv.DictReader(f)
         count = 0
         for row in reader:
-            #print(row,row.keys())
-            if (count%2!=0):
+            #Using a sampling rate of two times the original sampling.
+            if count%sampling_rate:
                 count+=1
                 continue
-            newFrequency = 0.0
-            lst = list(row.values())
-            if float(lst[0]) > 0:
-                #newFrequency = getFrequencyFromBin(getBinFromFrequency(float(list(row.values())[0])))
-                newFrequency = float(list(row.value())[0])
-		# print(newFrequency)
-            pitch_list.append(newFrequency)
+            # print(row)
+            newFreq = float(list(row.values())[0])
+            # Note: comparing float 0.0 to 0 results in **False**
+            if newFreq > 0:
+                pitch_bin_list.append(getBinFromFrequency(newFreq))
+            else:
+                pitch_bin_list.append(0)
+            pitch_freq_list.append(newFreq)
             count+=1
-    return pitch_list
+    return pitch_bin_list, pitch_freq_list
 
 
 ###################

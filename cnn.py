@@ -18,10 +18,14 @@ from train_util import *
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+parser.add_argument('--mode', type=str,
+                    help='Running mode: train / test')
+parser.add_argument('--load-model', type=str, default=None,
+                    help='Path to the pretrained model')
 parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 32)')
-parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                    help='input batch size for testing (default: 1000)')
+parser.add_argument('--test-batch-size', type=int, default=32, metavar='N',
+                    help='input batch size for testing (default: 32)')
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
@@ -68,11 +72,11 @@ val_loader = DataLoader(val_set,
 
 # test
 annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/test/'
-test_set = PitchEstimationDataSet(annotations_test, 'root/data/test', transform=transforms.Compose([
-               transforms.ToTensor(),
-               transforms.Normalize((0.1307,), (0.3081,))
-               ]))
-test_set = PitchEstimationDataSet(annotations_test, 'root/data/test')
+# test_set = PitchEstimationDataSet(annotations_test, 'root/data/test', transform=transforms.Compose([
+#                transforms.ToTensor(),
+#                transforms.Normalize((0.1307,), (0.3081,))
+#                ]))
+test_set = PitchEstimationDataSet(annotations_test, '/root/data/test')
 test_loader = DataLoader(test_set,
     batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
@@ -134,7 +138,7 @@ def validate(data_loader, model, criterion):
     for batch_idx, dictionary in enumerate(data_loader):
         batch_start = time()
 
-        data, target = Variable(dictionary['image']).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
+        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
 
@@ -194,42 +198,48 @@ if __name__ == '__main__':
 
     criterion = F.nll_loss
     best_prec = 0
-    for epoch in range(1, args.epochs + 1):
-        print('\n\n###############\n'
-          '    Epoch {:d}'
-          '\n###############'.format(epoch))
-
-        train(model, train_loader, criterion, epoch)
-
-        # validation
-        prec = validate(val_loader, model, criterion)
-        is_best = prec > best_prec
-        best_prec = max(prec, best_prec)
-        save_checkpoint({
-            'epoch': epoch,
-            'state_dict': model.state_dict(),
-            'best_prec': best_prec,
-            'optimizer': optimizer.state_dict(),
-        }, is_best, filename=args.save_dir+args.save_prefix+'_epoch{:d}.pt'.format(epoch))
-
-        # update lr
-        if epoch<6:
-            # print('checking for avg loss')
-            # avg_loss = avg_loss / args.lr_interval
-            # if prev_avg_loss - avg_loss < 0.05:
-            if epoch == 2 or epoch == 4:
-                args.lr /= 10
+    if args.mode == 'train':
+        for epoch in range(1, args.epochs + 1):
+            print('\n\n###############\n'
+              '    Epoch {:d}'
+              '\n###############'.format(epoch))
+    
+            train(model, train_loader, criterion, epoch)
+    
+            # validation
+            prec = validate(val_loader, model, criterion)
+            is_best = prec > best_prec
+            best_prec = max(prec, best_prec)
+            save_checkpoint({
+                'epoch': epoch,
+                'state_dict': model.state_dict(),
+                'best_prec': best_prec,
+                'optimizer': optimizer.state_dict(),
+            }, is_best, filename=args.save_dir+args.save_prefix+'_epoch{:d}.pt'.format(epoch))
+    
+            # update lr
+            if epoch<6:
+                # print('checking for avg loss')
+                # avg_loss = avg_loss / args.lr_interval
+                # if prev_avg_loss - avg_loss < 0.05:
+                if epoch == 2 or epoch == 4:
+                    args.lr /= 10
+                    for param_group in optimizer.param_groups:
+                        print(param_group['lr'])
+                        param_group['lr'] = args.lr
+                    print('Update lr to ' + str(args.lr))
+                # prev_avg_loss, avg_loss = avg_loss, 0
+            # update momentum
+            if args.update_momentum and args.momentum < 0.9:
+                args.momentum += 0.1
                 for param_group in optimizer.param_groups:
-                    print(param_group['lr'])
-                    param_group['lr'] = args.lr
-                print('Update lr to ' + str(args.lr))
-            # prev_avg_loss, avg_loss = avg_loss, 0
-        # update momentum
-        if args.update_momentum and args.momentum < 0.9:
-            args.momentum += 0.1
-            for param_group in optimizer.param_groups:
-                print(param_group['momentum'])
-                param_group['momentum'] = args.momentum
-            print('Update momentum to ' + str(args.momentum))
-
-    # test(model, test_loader)
+                    print(param_group['momentum'])
+                    param_group['momentum'] = args.momentum
+                print('Update momentum to ' + str(args.momentum))
+    else:
+        # testing
+        pretrained_dict = torch.load(args.load_model)['state_dict']
+        model.load_state_dict(pretrained_dict)
+        model.cuda()
+        # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
+        validate(test_loader, model, criterion)

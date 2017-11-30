@@ -6,8 +6,7 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
-# from read_melody import *
-from util import *
+from util import read_melody
 
 class PitchEstimationDataSet(Dataset):
     """Pitch Estimation dataset."""
@@ -33,7 +32,8 @@ class PitchEstimationDataSet(Dataset):
             if filename.endswith(".csv"):
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
-                new_bin_melody, _ = read_melody(audioName, annotations_dir)[:-1]
+                new_bin_melody, _ = read_melody(audioName, annotations_dir)
+                new_bin_melody = new_bin_melody[:-1]
                 self.lengths.append(len(new_bin_melody)+ self.currentCount)
                 self.currentCount += len(new_bin_melody)
                 self.pitches.append(new_bin_melody)

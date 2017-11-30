@@ -1,7 +1,7 @@
 # import IPython.display
 import librosa
 import time
-import util
+from util import *
 import numpy as np
 debug = False
 database_sr = 44100
@@ -12,8 +12,17 @@ def main():
 	result_file = '../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/' + audio_name + '.csv'
 	raw_pitch, processed_pitch = baseline_tracking(audio_file, result_file)
 	#util.plot(processed_pitch, audio_name) # pass in input as needed
-	gt = util.read_melody(audio_name)
-	err = evaluation_error(gt, processed_pitch)
+	gt = read_melody.read_melody(audio_name)
+	#gt = np.asarray(gt).reshape((len(gt),1))
+	processed_pitch = np.asarray(processed_pitch)
+	new_gt = util.subsample(np.asarray(gt), processed_pitch)
+	processed_pitch = processed_pitch/(np.max(processed_pitch)/np.max(new_gt))
+	print(processed_pitch, np.sum(new_gt))
+	print("!!!",np.max(processed_pitch), np.max(new_gt))
+	print(processed_pitch.shape, new_gt.shape)
+	print(np.sum(new_gt-processed_pitch))
+	err = np.mean((new_gt-processed_pitch)**2)
+	print(err)
 	print("baseline error:"+str(err))
 
 # Takes input file and result file
@@ -50,7 +59,8 @@ def baseline_tracking(audio_file, result_file=None):
 			print(merged_idx.shape)
 
 		# only print at a time t if there're notes present
-		if pitch_t != 0 and mag_t > mag_thresh:
+#		if pitch_t != 0 and mag_t > mag_thresh:
+		if True:
 			ret_pitch.append(pitch_t)
 			if result_file:
 				file.write(str(t)+ ',' + str(pitch_t)+'\n')
