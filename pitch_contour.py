@@ -119,7 +119,7 @@ class PitchContour(CSP):
 # Data contains N lines that contains the sequence of bins.
 # Perform learning by counting each transitions and normalizing
 # Save the transitions in file
-def trainTransition(data, bins,  outputFile, alpha=1):
+def trainTransition(data, bins, outputFile, alpha=1):
     # Dictionary containing all values of function (fbefore, fafter) -> probability
     transitionProb = collections.defaultdict(float)
     # Dictionary containing counts of function (fbefore)
