@@ -7,8 +7,6 @@ import matplotlib.pylab as plt
 from midiutil.MidiFile import MIDIFile
 import numpy as np
 import os, math
-from pitch_contour import getBinFromFrequency, getFrequencyFromBin
-
 # Function list:
 # extract_pitch_max: keep only max (magnitude) pitches at each time interval
 # plot: pitches to plot
