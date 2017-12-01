@@ -81,5 +81,6 @@ print ("Done.")
 
 # Output MIDI file
 print ("Save as MIDI file.")
-outputMIDI(N, solution, filename+'_result',  duration = 0.3)
+frequencies = [getFrequencyFromBin(solution[i]) for i in range(N)]
+outputMIDI(N, frequencies, filename+'_result',  duration = 0.3)
 print ("Done. The file was saved at midiOutput/"+filename+"_result.mid")

@@ -167,7 +167,7 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
 # frequencies: array of size N with frequencies in Hz
 # output_name: name of the file to be saved
 # duration of each notes in s.
-def outputMIDI(N, frequencies, output_name,  duration = 1):
+def outputMIDI(N, frequencies, output_name,  duration = 0.01):
     # Creates a MIDI file with one track
     MyMIDI = MIDIFile(1)
     track = 0
