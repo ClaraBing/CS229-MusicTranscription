@@ -50,5 +50,7 @@ for songID in range(val_set.numberOfSongs):
     print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/N))
     cnnOnlyAccuracy += currentCnnOnlyAccuracy
     totalAccuracy += currentAccuracy
-print ("With HMM: Total accuracy rate %f" % totalAccuracy/val_set.lengths[-1])
-print ("Without HMM: Total accuracy rate %f" % cnnOnlyAccuracy/val_set.lengths[-1])
+print ("With HMM: Total accuracy rate")
+print (totalAccuracy/val_set.lengths[-1])
+print ("Without HMM: Total accuracy rate")
+print (cnnOnlyAccuracy/val_set.lengths[-1])
