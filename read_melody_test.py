@@ -1,7 +1,7 @@
 # For test/dev
 
 from read_melody import *
-from pitch_contour import *
+from util import getBinFromFrequency
 
 def test_reading():
     name = "AimeeNorwich_Child"

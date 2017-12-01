@@ -118,6 +118,21 @@ def wav2spec_demo(data_dir, audioName, fext, outDir):
 #####################
 #  Data processing  #
 #####################
+# Get bin number from frequency using formula
+# n = floor(log(2^(57/12)*f/f0)/ log(\sqrt[12]{2})
+# why adding 2^(57/12): to make the output non-negative
+def getBinFromFrequency(frequency, base = 440.0):
+    if frequency == 0.0:
+        return 0
+    else:
+        return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0)))) + 58
+
+# Get frequency from bin using the formula
+def getFrequencyFromBin(bin, base = 440.0):
+    if bin == 0:
+        return 0.0
+    else:
+        return base * math.pow(2.0, (bin - 58) / 12.0)
 
 def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sampling_rate = 2):
 

@@ -1,6 +1,7 @@
 import unittest
 
 from pitch_contour import *
+from util import *
 import numpy as np
 
 np.random.seed(10)
