@@ -3,22 +3,7 @@ import math
 import sys
 import collections, util, copy
 from csp import *
-
-# Get bin number from frequency using formula
-# n = floor(log(2^(57/12)*f/f0)/ log(\sqrt[12]{2})
-# why adding 2^(57/12): to make the output non-negative
-def getBinFromFrequency(frequency, base = 440.0):
-    if frequency == 0.0:
-        return 0
-    else:
-        return round((math.log(frequency/base) / math.log(math.pow(2.0, 1/ 12.0)))) + 58
-
-# Get frequency from bin using the formula
-def getFrequencyFromBin(bin, base = 440.0):
-    if bin == 0:
-        return 0.0
-    else:
-        return base * math.pow(2.0, (bin - 58) / 12.0)
+from util import getBinFromFrequency, getFrequencyFromBin
 
 # Laplace distribution evaluation for a change of pitch period between two frames.
 # Enforces temporal continuity between two adjacent states.
@@ -45,25 +30,31 @@ def multinomial(value, probabilities, values):
 # given by the CNN.
 # bins: array of size K with the values of possible bins
 # variance is defaulted to 0.5 as the bins are integers.
-def gaussianMixtureModelDistribution(observation, K, probabilities, bins):
+def gaussianMixtureModelDistribution(observation, probabilities, bins):
+    K = len(bins)
     normals = [pdf(bins[i], 0.5, observation) for i in range(K)]
     return np.sum(np.multiply(normals, probabilities))
 
 # Default transition probability function between two bins
-def transition_probability(binbefore, binafter):
+def transition_probability(binbefore, binafter, mu, sigma):
     fbefore = getFrequencyFromBin(binbefore)
     fafter = getFrequencyFromBin(binafter)
     if fbefore > 0 and fafter > 0:
-        return laplaceDistribution(abs(1.0 / fbefore- 1.0 / fafter))
+        return laplaceDistribution(abs(1.0 / fbefore- 1.0 / fafter), mu, sigma)
     else:
         return 1.0 / 109 # this is the emission probability starting from 0.0
 
 class PitchContour(CSP):
-    def __init__(self):
+    def __init__(self, emission='multinomial', transmission='mle', start='uniform', mu=0.4, sigma=2.4):
         super(PitchContour, self).__init__()
         self.probStart = None
         self.probTrans = None
         self.probEmission = None
+        self.emissionMode = emission
+        self.transmissionMode = transmission
+        self.startMode = start
+        self.mu = mu
+        self.sigma = sigma
 
     # Set the start probability of the start state
     def setStartProbability(self, probability):
@@ -84,17 +75,24 @@ class PitchContour(CSP):
     def setNotes(self, N, K, probabilities, bins):
         # Set emission probability to default if nothing was specified
         if self.probEmission is None:
-            probEmission = lambda i : lambda v : multinomial(v, probabilities[i], bins[i])
+            if self.emissionMode == 'multinomial':
+                probEmission = lambda i : lambda v : multinomial(v, probabilities[i], bins[i])
+            elif self.emissionMode == 'gaussian':
+                probEmission = lambda i : lambda v : \
+                    gaussianMixtureModelDistribution(v, probabilities[i], bins[i])
         else:
-            probEmission = self.probEmission
-        # Set transition probability to laplacian model is nothin was specified
+            probEmission = self.probEmission        
+        # Set transition probability to laplacian model if nothing was specified
         if self.probTrans is None:
-            probTrans = transition_probability
+            probTrans = lambda u,v : transition_probability(u, v, self.mu, self.sigma)
         else:
             probTrans = self.probTrans
         # Set start probability to uniform if nothing was specified
         if self.probStart is None:
-            probStart = lambda v : 1.0 / 109
+            if self.startMode == 'uniform':
+                probStart = lambda v : 1.0 / 109
+            else:
+                probStart = lambda v : self.probTrans(0, v)
         else:
             probStart = self.probStart
 
