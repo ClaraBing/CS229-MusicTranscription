@@ -1,6 +1,6 @@
 import numpy as np
-from pitch_contour import *
-from PitchEstimationDataSet import *
+from pitch_contour import PitchContour
+from PitchEstimationDataSet import PitchEstimationDataSet
 
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
 val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')

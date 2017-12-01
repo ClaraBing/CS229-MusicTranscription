@@ -6,8 +6,9 @@ import librosa.display
 import matplotlib.pylab as plt
 from midiutil.MidiFile import MIDIFile
 import numpy as np
-import os
-from pitch_contour import *
+import os, math
+from pitch_contour import getBinFromFrequency, getFrequencyFromBin
+
 # Function list:
 # extract_pitch_max: keep only max (magnitude) pitches at each time interval
 # plot: pitches to plot
@@ -134,7 +135,7 @@ def getFrequencyFromBin(bin, base = 440.0):
     else:
         return base * math.pow(2.0, (bin - 58) / 12.0)
 
-def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sampling_rate = 2):
+def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio = 2):
 
     csv_file = dir+folder_name+"_MELODY1.csv"
     pitch_bin_list = []
@@ -143,8 +144,9 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
         reader = csv.DictReader(f)
         count = 0
         for row in reader:
-            #Using a sampling rate of two times the original sampling.
-            if count%sampling_rate:
+            # sr_ratio: ratio between the sampling rate (sr) of the annotation and the sr of the spectrogram.
+            # Currently the ratio is 2, i.e. a spectrogram corresponds to every other line in the annotation.
+            if count % sr_ratio:
                 count+=1
                 continue
             # print(row)
