@@ -55,6 +55,13 @@ Pitch tracking is modeled as Hidden Markov Model that we solve using Gibbs Sampl
 
 Calling `solve()` computes an optimal assignment. The default method is Gibbs sampling. To use backtracking use `solve(mode='backtrack')`. 
 
+### Evaluating the HMM
+To evaluate the HMM, we load the results of the CNN on the validation set and perform pitch tracking on each song of the set through Gibbs Sampling. The result is then compared time frame by time frame to the annotations.
+Evaluation can be launched using 
+```
+python eval_hmm.py
+``` 
+By default this launches the evaluation for an HMM built using the learned transition probabilities and the multinomial model on each hidden variable and outputs the total accuracy on the validation set.
 
 ## Part 3 - Inference
 To test the entire pipeline, 
