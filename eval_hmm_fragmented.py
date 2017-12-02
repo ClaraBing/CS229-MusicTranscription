@@ -1,5 +1,5 @@
 import numpy as np
-from pitch_contour_log import PitchContour
+from pitch_contour import PitchContour
 from PitchEstimationDataSet import PitchEstimationDataSet
 import sys
 
@@ -26,7 +26,7 @@ transitions = np.load(trained_mle).item()
 # Run inference on each song
 K = 5
 hmmTotalAccuracy = []
-rangeM = [50, 200]
+rangeM = [20, 50, 100, 200, 300, 500, 1000]
 # for M in [50, 100, 200, 300, 400, 500]:
 for M in rangeM:
   totalAccuracy = 0
@@ -65,8 +65,8 @@ for M in rangeM:
           lastBin = solution[M-1]
           currentAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], solution, M)
           currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], bins[:, 0][i*M:(i+1)* M], M)
-          # print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/M))
-          # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/M))
+          print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/M))
+          print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/M))
           cnnOnlyAccuracy += currentCnnOnlyAccuracy
           totalAccuracy += currentAccuracy
 
@@ -81,8 +81,8 @@ for M in rangeM:
           solution = pitch_contour.solve()
           currentAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], solution, remainder)
           currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], bins[:, 0][patches*M:N], remainder)
-          # print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/remainder))
-          # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
+          print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/remainder))
+          print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
           cnnOnlyAccuracy += currentCnnOnlyAccuracy
           totalAccuracy += currentAccuracy
       sys.stdout.flush()

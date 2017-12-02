@@ -187,7 +187,7 @@ class GibbsSampling():
         iterations = 0
         optimalWeight = -float('inf')
         optimalAssignment = {}
-        while diff > 0.000 and iterations < 100:
+        while diff > 0.00001 and iterations < 1000:
             for var in csp.variables:
                 # print ("Currently dealing with variable %d" % var)
                 # unassign variable
