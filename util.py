@@ -15,6 +15,7 @@ import os, math
 # wav2spec_data / wav2spec_demo: generate spectrograms from wav files, for data (slices) or demo (entire audio)
 # read_melody
 # outputMIDI
+# eval_accuracy
 
 
 # Input:
@@ -158,6 +159,28 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
             count+=1
     return pitch_bin_list, pitch_freq_list
 
+def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio = 2):
+
+    csv_file = dir+folder_name+"_MELODY1.csv"
+    pitch_bin_list = []
+    pitch_freq_list = []
+    with open(csv_file) as f:
+        reader = csv.DictReader(f)
+        count = 0
+        for row in reader:
+            # sr_ratio: ratio between the sampling rate (sr) of the annotation and the sr of the spectrogram.
+            # Currently the ratio is 2, i.e. a spectrogram corresponds to every other line in the annotation.
+            if count % sr_ratio:
+                count+=1
+                continue
+            # print(row)
+            newFreq = [float(x) for x in list(row.values())]
+            # Note: comparing float 0.0 to 0 results in **False**
+            pitch_bin_list.append(getBinFromFrequency(newFreq))
+            pitch_freq_list.append(newFreq)
+            count+=1
+    return pitch_bin_list, pitch_freq_list
+
 
 ###################
 # Post-processing #
@@ -184,3 +207,23 @@ def outputMIDI(N, frequencies, output_name,  duration = 0.01):
     binfile = open("midiOutput/"+ output_name + ".mid", 'wb')
     MyMIDI.writeFile(binfile)
     binfile.close()
+
+
+
+
+
+####################
+##   Evaluation   ##
+####################
+
+def eval_accuracy(output, target, N):
+    print('N: ', N)
+    print('out shape: ', np.asarray(output).shape)
+    print('target shape: ', np.asarray(target).shape)
+    cnt = 0
+    for i in range(len(output)):
+        if output[i] == target[i]:
+            cnt += 1
+    return sum([int(a==b) for a,b in zip(output, target)]), cnt
+
+
