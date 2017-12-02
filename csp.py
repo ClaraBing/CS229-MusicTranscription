@@ -124,23 +124,6 @@ class CSP(object):
                     assert i in currentTable and j in currentTable[i]
                     currentTable[i][j] *= table[i][j]
 
-    def get_assignment_weight(self, assignment):
-        """
-        Given a current assignment(can be partial), return the weight
-        """
-        w = 1.0
-        computedBinaryFactors = []
-        variables = list(assignment)
-        for i in range(len(variables)):
-            var1 = variables[i]
-            if self.unaryFactors[var1]:
-                w *= (self.unaryFactors[var1][assignment[var1]])
-            for j in range(i+1, (len(variables))):
-                var2 = variables[j]
-                if self.binaryFactors[var1]:
-                    if var2 in self.binaryFactors[var1].keys():
-                        w *= (self.binaryFactors[var1][var2][assignment[var1]][assignment[var2]])
-        return w
 
     def get_delta_weight(self, assignment, var, val):
         """
@@ -159,14 +142,37 @@ class CSP(object):
             will be used as a multiplier on the current weight.
         """
         assert var not in assignment
-        w = 1.0
+        w = 0.0
         if self.unaryFactors[var]:
-            w *= (self.unaryFactors[var][val])
-            if w == 0: return w
+            value = self.unaryFactors[var][val]
+            if value == 0:
+                return -float('inf')
+            else:
+                w += np.log(value)
         for var2, factor in self.binaryFactors[var].items():
             if var2 not in assignment: continue  # Not assigned yet
-            w *= (factor[val][assignment[var2]])
-            if w == 0: return w
+            value = factor[val][assignment[var2]]
+            if value == 0:
+                return -float('inf')
+            else:
+                w += np.log(value)
+        return w
+
+    def get_assignment_weight(self, assignment):
+        """
+        Given a current assignment(can be partial), return the weight
+        """
+        w = 0.0
+        mockassignment = {}
+        variables = list(assignment)
+        for i in range(len(variables)):
+            var1 = variables[i]
+            delta = self.get_delta_weight(mockassignment, var1, assignment[var1])
+            if delta == -float('inf'):
+                return delta
+            else:
+                w += delta
+                mockassignment[var1] = assignment[var1]
         return w
 
 class GibbsSampling():
@@ -179,25 +185,29 @@ class GibbsSampling():
         currentWeight = csp.get_assignment_weight(currentAssignment)
         diff = 1
         iterations = 0
-        while diff > 0.0001:
+        optimalWeight = -float('inf')
+        optimalAssignment = {}
+        while diff > 0.000 and iterations < 100:
             for var in csp.variables:
                 # print ("Currently dealing with variable %d" % var)
                 # unassign variable
-                currentAssignment.pop(var)
+                del currentAssignment[var]
                 # compute delta weights for all possible assinments
-                delta_weights = [csp.get_delta_weight(currentAssignment, var, val) for val in csp.values[var]]
+                delta_weights = np.exp([csp.get_delta_weight(currentAssignment, var, val) for val in csp.values[var]])
                 # sample variable using weights
-                new_value = np.random.choice(csp.values[var], 1, p=delta_weights/np.sum(delta_weights))
-                currentAssignment[var] = new_value[0]
+                new_value = np.random.choice(csp.values[var], 1, p=delta_weights/np.sum(delta_weights))[0]
+                currentAssignment[var] = new_value
             newWeight = csp.get_assignment_weight(currentAssignment)
-            # print (newWeight)
+            if newWeight > optimalWeight:
+                optimalWeight = newWeight
+                optimalAssignment = currentAssignment
             diff = abs(currentWeight - newWeight)
             currentWeight = newWeight
             iterations += 1
 
         print (("Converged in %d iterations") % iterations)
-        print ((" Optimal weight is %f") % currentWeight)
-        return currentAssignment
+        print ((" Optimal weight is %f") % optimalWeight)
+        return optimalAssignment
 
 class BacktrackingSearch():
 
@@ -255,7 +265,7 @@ class BacktrackingSearch():
         self.domains = {var: list(self.csp.values[var]) for var in self.csp.variables}
 
         # Perform backtracking search.
-        self.backtrack({}, 0, 1)
+        self.backtrack({}, 0, 0)
         # Print summary of solutions.
         self.print_stats()
 
@@ -273,8 +283,7 @@ class BacktrackingSearch():
         """
 
         self.numOperations += 1
-        print (weight)
-        assert weight > 0
+        assert weight > -float('inf')
         if numAssigned == self.csp.numVars:
             # A satisfiable solution have been found. Update the statistics.
             self.numAssignments += 1
@@ -303,9 +312,9 @@ class BacktrackingSearch():
             # When arc consistency check is not enabled.
             for val in ordered_values:
                 deltaWeight = self.csp.get_delta_weight(assignment, var, val)
-                if deltaWeight > 0:
+                if deltaWeight > -float('inf'):
                     assignment[var] = val
-                    self.backtrack(assignment, numAssigned + 1, weight * deltaWeight)
+                    self.backtrack(assignment, numAssigned + 1, weight + deltaWeight)
                     del assignment[var]
         else:
             # Arc consistency check is enabled.
@@ -313,7 +322,7 @@ class BacktrackingSearch():
             # You need to implement arc_consistency_check().
             for val in ordered_values:
                 deltaWeight = self.csp.get_delta_weight(assignment, var, val)
-                if deltaWeight > 0:
+                if deltaWeight > -float('inf'):
                     assignment[var] = val
                     # create a deep copy of domains as we are going to look
                     # ahead and change domain values
@@ -325,7 +334,7 @@ class BacktrackingSearch():
                     # enforce arc consistency
                     self.arc_consistency_check(var)
 
-                    self.backtrack(assignment, numAssigned + 1, weight * deltaWeight)
+                    self.backtrack(assignment, numAssigned + 1, weight + deltaWeight)
                     # restore the previous domains
                     self.domains = localCopy
                     del assignment[var]
@@ -351,7 +360,7 @@ class BacktrackingSearch():
                 if var not in assignment:
                     count = 0
                     for p in self.domains[var]:
-                        if self.csp.get_delta_weight(assignment, var, p) > 0:
+                        if self.csp.get_delta_weight(assignment, var, p) > -float('inf'):
                             count+=1
                     if count < min_count:
                         min_count = count

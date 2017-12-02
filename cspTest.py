@@ -5,6 +5,13 @@ import numpy as np
 
 np.random.seed(10)
 class PitchContourTest(unittest.TestCase):
+    def enumerate_assignments(i, assignment, N, pitch, frequencies):
+        if i == N:
+            print (pitch.get_assignment_weight(assignment), assignment)
+        else:
+            for j in frequencies[i]:
+                assignment[i] = j
+                enumerate_assignments(i + 1, assignment, N, pitch, frequencies)
 
     def test_freqbin(self):
         bin = getBinFromFrequency(440.0)
@@ -21,6 +28,29 @@ class PitchContourTest(unittest.TestCase):
             for j in range(5):
                 count += probabilities[(i,j)]
             self.assertEqual(int(round(count)), 1)
+
+    def test_get_weights(self):
+        flat_pitch = PitchContour()
+        K = 2
+        N = 4
+        frequencies = np.array([
+        [16, 15],
+        [15, 14],
+        [12, 13],
+        [10, 12]
+        ])
+        probabilities = np.array([
+        [0.1, 0.9],
+        [0.1, 0.9],
+        [0.45, 0.55],
+        [0, 1]
+        ])
+        flat_pitch.setNotes(N, K, probabilities, frequencies)
+
+        assignment = {0: 15, 1: 14, 2: 13, 3: 12}
+        self.assertEqual(flat_pitch.get_assignment_weight(assignment), \
+            flat_pitch.get_delta_weight({}, 0, 15) + flat_pitch.get_delta_weight({0:15}, 1, 14) + \
+            flat_pitch.get_delta_weight({0:15, 1: 14}, 2, 13) + flat_pitch.get_delta_weight({0:15, 1: 14, 2: 13}, 3, 12))
 
     def test_inference(self):
         flat_pitch = PitchContour()
@@ -39,9 +69,9 @@ class PitchContourTest(unittest.TestCase):
         [0, 1]
         ])
         flat_pitch.setNotes(N, K, probabilities, frequencies)
-        solutionCSP = flat_pitch.solve()#mode="backtrack")
-        solution = {0 : 15, 1: 14, 2: 13, 3: 12}
-        self.assertTrue(solution == solutionCSP)
+        solutionCSP = flat_pitch.solve()
+        solutionBacktrack = flat_pitch.solve(mode='backtrack')
+        self.assertTrue(solutionBacktrack == solutionCSP)
 
     def test_both(self):
         data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
@@ -56,17 +86,16 @@ class PitchContourTest(unittest.TestCase):
         [2, 4]
         ])
         probabilities = np.array([
-        [0.9, 0.21],
-        [0.5, 0.51],
+        [0.9, 0.1],
+        [0.5, 0.5],
         [0.45, 0.55],
         [1, 0]
         ])
         pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
         pitch.setNotes(N, K, probabilities, bins)
-        solutionCSP = pitch.solve()# mode="backtrack")
-        solution = {0 : 1, 1: 2, 2: 3, 3: 2}
-        print (solution)
-        self.assertTrue(solution == solutionCSP)
+        solutionCSP = pitch.solve()
+        solutionBacktrack = pitch.solve(mode='backtrack')
+        print (solutionBacktrack, solutionCSP)
 
     def test_gibbs(self):
         data = [[1, 2 ,3, 2, 4], [1, 2, 4, 3, 4], [1, 1, 2]]
@@ -89,9 +118,8 @@ class PitchContourTest(unittest.TestCase):
         pitch.setTransitionProbability(lambda f1, f2 : transition[(f1, f2)])
         pitch.setNotes(N, K, probabilities, bins)
         solutionCSP = pitch.solve(mode="gibbs")
-        solution = {0 : 1, 1: 2, 2: 3, 3: 2}
-        print (solution)
-        self.assertTrue(solution == solutionCSP)
+        solutionBacktrack = pitch.solve(mode='backtrack')
+        print (solutionBacktrack, solutionCSP)
 
 if __name__ == '__main__':
     unittest.main()
