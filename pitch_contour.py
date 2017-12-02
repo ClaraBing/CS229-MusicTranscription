@@ -42,7 +42,7 @@ def transition_probability(binbefore, binafter, mu, sigma):
     if fbefore > 0 and fafter > 0:
         return laplaceDistribution(abs(1.0 / fbefore- 1.0 / fafter), mu, sigma)
     else:
-        return 1.0 / 109 # this is the emission probability starting from 0.0
+        return 1.0 / 5 # Uniform distribution
 
 class PitchContour(CSP):
     def __init__(self, emission='multinomial', transmission='mle', start='uniform', mu=0.4, sigma=2.4):
@@ -81,7 +81,7 @@ class PitchContour(CSP):
                 probEmission = lambda i : lambda v : \
                     gaussianMixtureModelDistribution(v, probabilities[i], bins[i])
         else:
-            probEmission = self.probEmission        
+            probEmission = self.probEmission
         # Set transition probability to laplacian model if nothing was specified
         if self.probTrans is None:
             probTrans = lambda u,v : transition_probability(u, v, self.mu, self.sigma)
