@@ -2,7 +2,6 @@
 from __future__ import print_function
 import argparse
 from time import time
-import os # for mkdir
 import sys # for flushing stdout
 # torch related
 import torch
@@ -45,7 +44,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 parser.add_argument('--save-interval', type=int, default=5000, metavar='N',
                     help='how many batches to wait before saving the trained model')
-parser.add_argument('--save-dir', type=str, default='./output_model/', metavar='N',
+parser.add_argument('--save-dir', type=str, default='./output_model/conv5_/', metavar='N',
                     help='save directory of trained models')
 parser.add_argument('--save-prefix', type=str, default='model_conv5_train', metavar='N',
                     help='prefix of trained models')
@@ -62,8 +61,8 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 # train
 annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
 training_set = PitchEstimationDataSet(annotations_train, '/root/data/train/')
-train_loader = DataLoader(training_set, batch_size=1, shuffle=False, **kwargs)
-#    batch_size = args.batch_size, shuffle = True, **kwargs)
+train_loader = DataLoader(training_set,
+    batch_size = args.batch_size, shuffle = True, **kwargs)
 
 # val
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
@@ -214,8 +213,6 @@ if __name__ == '__main__':
     criterion = F.nll_loss
     best_prec = 0
     if args.mode == 'train':
-        if not os.path.exists(args.save_dir):
-          os.mkdir(args.save_dir)
         for epoch in range(1, args.epochs + 1):
             print('\n\n###############\n'
               '    Epoch {:d}'
@@ -239,7 +236,7 @@ if __name__ == '__main__':
                 # print('checking for avg loss')
                 # avg_loss = avg_loss / args.lr_interval
                 # if prev_avg_loss - avg_loss < 0.05:
-                if epoch % 2 == 0:
+                if epoch == 2 or epoch == 4:
                     args.lr /= 10
                     for param_group in optimizer.param_groups:
                         print(param_group['lr'])
@@ -259,4 +256,4 @@ if __name__ == '__main__':
         model.load_state_dict(pretrained_dict)
         model.cuda()
         # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-        validate(train_loader, model, criterion, outfile='train_result_mtrx.npy')
+        validate(val_loader, model, criterion, outfile='val.npy')

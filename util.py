@@ -176,7 +176,7 @@ def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Anno
             # print(row)
             newFreq = [float(x) for x in list(row.values())]
             # Note: comparing float 0.0 to 0 results in **False**
-            pitch_bin_list.append(getBinFromFrequency(newFreq))
+            pitch_bin_list.append([getBinFromFrequency(x) for x in newFreq])
             pitch_freq_list.append(newFreq)
             count+=1
     return pitch_bin_list, pitch_freq_list
@@ -220,6 +220,7 @@ def eval_accuracy(output, target, N):
     print('N: ', N)
     print('out shape: ', np.asarray(output).shape)
     print('target shape: ', np.asarray(target).shape)
+    print(len(target))
     cnt = 0
     for i in range(len(output)):
         if output[i] == target[i]:

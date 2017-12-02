@@ -3,6 +3,7 @@ import librosa
 import time
 from util import *
 import numpy as np
+from train_util import *
 debug = False
 database_sr = 44100
 
@@ -11,18 +12,18 @@ def main():
 	audio_file = '../MedleyDB_selected/Audios/AimeeNorwich_Flying/' + audio_name + '_MIX.wav'
 	result_file = '../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/' + audio_name + '.csv'
 	raw_pitch, processed_pitch = baseline_tracking(audio_file, result_file)
-	#util.plot(processed_pitch, audio_name) # pass in input as needed
-	gt = read_melody.read_melody(audio_name)
+	gt = read_melody(audio_name)[0]
+	#print("gt processed_pitch length",len(gt[0]), len(processed_pitch))
 	#gt = np.asarray(gt).reshape((len(gt),1))
 	processed_pitch = np.asarray(processed_pitch)
-	new_gt = util.subsample(np.asarray(gt), processed_pitch)
-	processed_pitch = processed_pitch/(np.max(processed_pitch)/np.max(new_gt))
-	print(processed_pitch, np.sum(new_gt))
-	print("!!!",np.max(processed_pitch), np.max(new_gt))
-	print(processed_pitch.shape, new_gt.shape)
+	print(np.asarray(gt).shape, processed_pitch.shape)
+	new_gt = subsample(np.asarray(gt), processed_pitch)
+	#processed_pitch = processed_pitch/(np.max(processed_pitch)/np.max(new_gt))
+	#print(processed_pitch, new_gt)
 	print(np.sum(new_gt-processed_pitch))
 	err = np.mean((new_gt-processed_pitch)**2)
-	print(err)
+	res = accuracy(processed_pitch, new_gt)
+	print(res)
 	print("baseline error:"+str(err))
 
 # Takes input file and result file
@@ -40,7 +41,7 @@ def baseline_tracking(audio_file, result_file=None):
 	mag_thresh = 2*np.mean(magnitudes)/3
 	d_range, time_range = pitches.shape
 	pitches_max, magnitudes_max = \
-		util.extract_pitch_max(pitches, magnitudes, time_range)
+		extract_pitch_max(pitches, magnitudes, time_range)
 	ret_pitch = []
 	if result_file:
 		file = open(result_file, 'w+')

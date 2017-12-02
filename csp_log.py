@@ -2,9 +2,12 @@ import numpy as np
 import math
 import sys
 import collections, util, copy
+from math import log
 
 ## Taken from CS221 scheduling starter code
 
+debug = False
+global_bound = 10000
 # General code for representing a weighted CSP (Constraint Satisfaction Problem).
 # All variables are being referenced by their index instead of their original
 # names.
@@ -128,21 +131,30 @@ class CSP(object):
         """
         Given a current assignment(can be partial), return the weight
         """
-        w = 1.0
+        w = 0
+        smooth = 0.000
         computedBinaryFactors = []
         variables = list(assignment)
         for i in range(len(variables)):
             var1 = variables[i]
             if self.unaryFactors[var1]:
-                w *= (self.unaryFactors[var1][assignment[var1]])
+                curr_prob = self.unaryFactors[var1][assignment[var1]] + smooth
+                if curr_prob == 0:
+                    return float("inf")
+                w -= log(curr_prob)
+                # w -= log(self.unaryFactors[var1][assignment[var1]] + smooth)
             for j in range(i+1, (len(variables))):
                 var2 = variables[j]
                 if self.binaryFactors[var1]:
                     if var2 in self.binaryFactors[var1].keys():
-                        w *= (self.binaryFactors[var1][var2][assignment[var1]][assignment[var2]])
+                        curr_prob = self.binaryFactors[var1][var2][assignment[var1]][assignment[var2]] + smooth
+                        if curr_prob == 0:
+                            return float("inf")
+                        w -= log(curr_prob)
+                        # w -= log(self.binaryFactors[var1][var2][assignment[var1]][assignment[var2]] + smooth)
         return w
 
-    def get_delta_weight(self, assignment, var, val):
+    def get_delta_weight(self, assignment, var, val, song_len=None):
         """
         Given a partial assignment, and a proposed new value for a variable,
         return the change of weights after assigning the variable with the proposed
@@ -159,14 +171,24 @@ class CSP(object):
             will be used as a multiplier on the current weight.
         """
         assert var not in assignment
-        w = 1.0
+        w = 0
+        smooth = 0.000
         if self.unaryFactors[var]:
-            w *= (self.unaryFactors[var][val])
-            if w == 0: return w
+            curr_prob = self.unaryFactors[var][val] + smooth
+            if curr_prob == 0:
+                return float("inf")
+            w -= log(curr_prob)
+            # w -= log(self.unaryFactors[var][val] + smooth)
+            # if w > song_len*global_bound: return w # TODO: not sure if I should remove this check
         for var2, factor in self.binaryFactors[var].items():
             if var2 not in assignment: continue  # Not assigned yet
-            w *= (factor[val][assignment[var2]])
-            if w == 0: return w
+            curr_prob = factor[val][assignment[var2]] + smooth
+            if curr_prob == 0:
+                return float("inf")
+            w -= log(curr_prob)
+            # w -= log(factor[val][assignment[var2]] + smooth)
+            # if w > song_len*global_bound: return w # TODO: not sure if I should remove this check
+        if debug: print ('delta weight: ', w)
         return w
 
 class GibbsSampling():
@@ -177,21 +199,33 @@ class GibbsSampling():
         for var in csp.variables:
             currentAssignment[var] = np.random.choice(csp.values[var])
         currentWeight = csp.get_assignment_weight(currentAssignment)
+        print (currentWeight)
         diff = 1
         iterations = 0
-        while diff > 0.0001:
+        song_len = len(csp.variables)
+        while diff > 0.00001:
             for var in csp.variables:
-                # print ("Currently dealing with variable %d" % var)
+                if debug: print ("Currently dealing with variable %d" % var)
                 # unassign variable
+                old_value = currentAssignment[var]
                 currentAssignment.pop(var)
                 # compute delta weights for all possible assinments
-                delta_weights = [csp.get_delta_weight(currentAssignment, var, val) for val in csp.values[var]]
+                probs = np.exp([-csp.get_delta_weight(currentAssignment, var, val, song_len) for val in csp.values[var]])
+                delta_weights = probs / np.sum(probs)
                 # sample variable using weights
-                new_value = np.random.choice(csp.values[var], 1, p=delta_weights/np.sum(delta_weights))
-                currentAssignment[var] = new_value[0]
-            newWeight = csp.get_assignment_weight(currentAssignment)
-            # print (newWeight)
+                new_value = np.random.choice(csp.values[var], 1, p=delta_weights)[0]
+                # Avoid recomputing the entire assignment's weight
+                old_delta = csp.get_delta_weight(currentAssignment, var, old_value, song_len)
+                if old_delta == float("inf"):
+                  currentAssignment[var] = new_value
+                  newWeight = csp.get_assignment_weight(currentAssignment)
+                else:
+                  newDelta = csp.get_delta_weight(currentAssignment, var, new_value, song_len)
+                  newWeight = currentWeight - newDelta + old_delta
+                  currentAssignment[var] = new_value
+                if debug: print (newWeight)
             diff = abs(currentWeight - newWeight)
+            print(newWeight)
             currentWeight = newWeight
             iterations += 1
 
@@ -273,7 +307,7 @@ class BacktrackingSearch():
         """
 
         self.numOperations += 1
-        print (weight)
+        if debug: print (weight)
         assert weight > 0
         if numAssigned == self.csp.numVars:
             # A satisfiable solution have been found. Update the statistics.
