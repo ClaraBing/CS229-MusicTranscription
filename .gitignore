@@ -2,6 +2,7 @@ data/
 midiOutput/
 output_model/
 pitch_plots/
+spec_examples/
 *.pyc
 *.log
 *.err
