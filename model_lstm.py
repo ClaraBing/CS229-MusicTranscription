@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 
 class LSTMMultiNotes(nn.Module):
 
@@ -23,8 +24,8 @@ class LSTMMultiNotes(nn.Module):
         # Refer to the Pytorch documentation to see exactly
         # why they have this dimensionality.
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (autograd.Variable(torch.zeros(self.num_layers, 1, self.hidden_dim)),
-                autograd.Variable(torch.zeros(self.num_layers, 1, self.hidden_dim)))
+        return (Variable(torch.zeros(self.num_layers, 1, self.hidden_dim)),
+                Variable(torch.zeros(self.num_layers, 1, self.hidden_dim)))
 
     def forward(self, input_prob):
         lstm_out, self.hidden = self.lstm(
