@@ -3,55 +3,44 @@ from pitch_contour import PitchContour
 from PitchEstimationDataSet import PitchEstimationDataSet
 from util import getBinFromFrequency, read_melody
 from librosa_baseline import baseline_tracking
-import sys
+import sys, os
+from time import time
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
-audio_folder = '/root/MedleyDB_selected/Audios/
+audio_folder = '/root/MedleyDB_selected/Audios/'
 
-def evaluation_error(gt, pred):
-	# Normalize time
-	# find the number of time intervals
-	gt_interval = []
-	curr_interval = -1.000
+def evaluation_acc(gt, pred):
+	accurate = 0
 	for i in range(len(gt)):
-		gt[i][0] = round(gt[i][0], 3) # precision = miliseconds
-		if gt[i][0] == curr_interval:
-			gt_interval[-1] += gt[i][1],
-		else:
-			if gt[i][0] - curr_interval != 0.001:
-				# if skipping over some intervals -> put placeholdes
-				n_diff = (gt[i][0]-curr_interval) / 0.001
-				for i in range(n_diff):
-					gt_interval += [0],
-					curr_interval += 0.001
-			gt_interval += [gt[i][1]],
-			curr_interval = gt[i][0]
-	interval_cnt = len(gt_interval)
-	# normalize pitch time
-	step = int(len(pred)/interval_cnt)
-	pred_interval_avg = []
-	gt_interval_avg = []
-	for i in range(interval_cnt):
-		pred_notes = [note for notes in pred[i*step:(i+1)*step] for note in notes]
-		if pred_notes == []:
-			pred += 0,
-		else:
-			pred += sum(pred_notes) / len(pred_notes),
-		gt_interval_avg += sum(gt_interval[i]) / len(gt_interval[i])
-	if len(pred_interval_avg) != len(gt_interval_avg):
-		raise ValueError("Ground truth & prediction dimension mismatch")
-	err = mean((getBinFromFrequency(x) == getBinFromFrequency(y) for (x,y) in zip(pred_interval_avg, gt_interval_avg)))
-	return err
+		accurate += getBinFromFrequency(pred[i]) == getBinFromFrequency(gt[i])
+	return accurate / len(gt)
 
-baseline_acc = 0.0
+baseline_acc = []
+sid = 0 # song id
+total_start = time()
 for filename in os.listdir(annotations_val):
 	if filename.endswith(".csv"):
+		start = time()
+		sid += 1
 		# The ordering/lengths of songs can be determined following the code below:
-		audioName = filename[:filename.find('MELODY')-1]
+		audio_name = filename[:filename.find('MELODY')-1]
 		audio_file = audio_folder + audio_name + '/' + audio_name + '_MIX.wav'
+		print ('#', sid, " Baseline tracking for %s" % audio_name)
 		raw_pitch, processed_pitch = baseline_tracking(audio_file)
-		_, gt = read_melody(audio_name)
+		_, gt = read_melody(audio_name, sr_ratio = 2)
+		if abs(len(gt)-len(processed_pitch))>1:
+			raise ValueError('Dimension mismatch: gt={:d} / processed={:d}'.format(len(gt), len(processed_pitch)))
+		min_len = min(len(gt), len(processed_pitch))
+		processed_pitch, gt = processed_pitch[:min_len], gt[:min_len]
 		processed_pitch = np.asarray(processed_pitch)
-		print(np.asarray(gt).shape, processed_pitch.shape)
-		baseline_acc += evaluation_error(gt, processed_pitch)
+		acc = evaluation_acc(gt, processed_pitch)
+		print('accuracy: ', acc)
+		print('time: ', time()-start, '\n')
+		baseline_acc += acc,
+		sys.stdout.flush()
 
-print ("Baseline accuracy: ", baseline_acc / len(os.listdir(annotations_val)))
+print("\nAccuracy Overview:")
+print("Mean: ", sum(baseline_acc) / len(baseline_acc))
+print("Median: ", sorted(baseline_acc)[int(len(baseline_acc)/2)])
+print("Max: ", max(baseline_acc))
+print("Min: ", min(baseline_acc))
+print("=== Time: {:f}s * {:d} songs ===".format((time()-total_start)/len(baseline_acc), len(baseline_acc)))

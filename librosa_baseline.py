@@ -23,7 +23,7 @@ def main():
 	print(np.sum(new_gt-processed_pitch))
 	err = np.mean((new_gt-processed_pitch)**2)
 	res = accuracy(processed_pitch, new_gt)
-	print(res)
+	print('res: ', res)
 	print("baseline error:"+str(err))
 
 # Takes input file and result file
@@ -65,7 +65,7 @@ def baseline_tracking(audio_file, result_file=None):
 			ret_pitch.append(pitch_t)
 			if result_file:
 				file.write(str(t)+ ',' + str(pitch_t)+'\n')
-			else:
+			elif debug:
 				print(t)
 				print(pitch_t)
 				print()
