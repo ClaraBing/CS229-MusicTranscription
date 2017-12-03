@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 class LSTMDataSet(Dataset):
     """Pitch Estimation dataset."""
 
-    def __init__(self, annotations_dir, images_dir, transform=None):
+    def __init__(self, annotations_dir, input_file, transform=None):
         """
         Args:
             annotations_dir (string): Path to the annotation folder that contains
@@ -20,7 +20,7 @@ class LSTMDataSet(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.images_dir = images_dir
+        self.lstm_input = np.load(input_file)
         self.transform = transform
         # Load all CSVs and count number of frames in the total dataset
         self.pitches = []
@@ -58,10 +58,8 @@ class LSTMDataSet(Dataset):
         print("pitches size", len(self.pitches), len(self.pitches[0]))
         pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
         # print('pitchId: ' + str(pitchId))
-        img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_MIX_"+str(pitchId)+".png")
         # np.transpose: change from H*W*C to C*H*W
-        image = np.transpose(ndimage.imread(img_name, mode='RGB'), (2,0,1))
-        sample = {'image': image, 'frequency': self.pitches[songId][pitchId]}
+        sample = {'input': np.asarray(self.lstm_input[idx], dtype=int), 'freq_vec': self.pitches[songId][pitchId]}
 	# , 'song':songName, 'image_path':img_name, 'idx':idx}
 
         if self.transform:

@@ -12,7 +12,7 @@ class LSTMMultiNotes(nn.Module):
         # The LSTM takes word embeddings as inputs, and outputs hidden states
         # with dimensionality hidden_dim.
         # self.lstm = nn.LSTM(embedding_dim, hidden_dim)
-	self.lstm = nn.LSTM(109, self.hidden_dim)
+        self.lstm = nn.LSTM(109, self.hidden_dim)
 
         # The linear layer that maps from hidden state space to notes (pitch bins)
         self.fc = nn.Linear(self.hidden_dim, 109)

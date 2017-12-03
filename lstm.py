@@ -6,13 +6,15 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader 
 from model_lstm import *
+from LSTMDataset import *
+import sys
 
 # TODO: command line args + kwargs
 
 # data
 annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
 train_set = LSTMDataSet(annotations_train, '/root/CS229-MusicTranscription/dataset/train_lstm_input.npy')
-train_loader = DataLoader(trainint_set, batch_size=1, shuffle=True)
+train_loader = DataLoader(train_set, batch_size=1, shuffle=True)
 
 # model
 model = LSTMMultiNotes()
@@ -42,6 +44,11 @@ def train(model, train_loader, criterion, num_epoch):
             loss = criterion(tag_scores, targets)
             loss.backward()
             optimizer.step()
+
+            if idx % 10 == 0:
+                print('Train Epoch: epoch {} iter {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime per batch: {:.6f}s'.format(epoch, idx, idx*len(data), len(train_loader.dataset), 100.*idx/len(train_loader), loss.data[0]))
+                sys.stdout.flush()
+        torch.save(model, 'lstm_epoch{:d}.pt'.format(idx+1))
 
 # See what the scores are after training
 # inputs = prepare_sequence(training_data[0][0], word_to_ix)
