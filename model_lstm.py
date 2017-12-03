@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class LSTMMultiNotes(nn.Module):
 
-    def __init__(self, vocab_size, tagset_size):
+    def __init__(self):
         super(LSTMMultiNotes, self).__init__()
         self.hidden_dim = 1024
         self.num_layers = 2
