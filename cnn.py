@@ -62,7 +62,7 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 # train
 annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
 training_set = PitchEstimationDataSet(annotations_train, '/root/data/train/')
-train_loader = DataLoader(training_set, batch_size=1, shuffle=False, **kwargs)
+train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, **kwargs)
 #    batch_size = args.batch_size, shuffle = True, **kwargs)
 
 # val
