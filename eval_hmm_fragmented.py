@@ -16,19 +16,19 @@ annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY
 val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
 
 # Load CNN results from validation set
-filepath = "val.npy"
+filepath = "dataset/val_result_mtrx.npy"
 validation_inference = np.load(filepath)
 
 # Load trained Maximum Likelihood Estimates
-trained_mle = "transitions_mle.npy" # Path to saves parameters for HMM
+trained_mle = "dataset/transitions_mle.npy" # Path to saves parameters for HMM
 transitions = np.load(trained_mle).item()
 
 # Save probabilities that give best results for HMM and worst result for HMM
-b_prob = []
-w_prob = []
+K=5
+b_prob = np.zeros((1,K))
+w_prob = np.zeros((1,K))
 
 # Run inference on each song
-K = 5
 hmmTotalAccuracy = []
 # rangeM = [20, 50, 100, 200, 300, 500, 1000]
 # for M in [50, 100, 200, 300, 400, 500]:
@@ -38,7 +38,7 @@ for M in rangeM:
   cnnOnlyAccuracy = 0
   offset = 0
 
-  for songID in range(val_set.numberOfSongs):
+  for songID in range(1):
       songName = val_set.songNames[songID]
       print ("Evaluating for " + songName)
       N = val_set.songLengths[songID]
@@ -73,9 +73,9 @@ for M in rangeM:
           # print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/M))
           # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/M))
           if currentAccuracy / M > currentCnnOnlyAccuracy / M + 0.1:
-              b_prob.append((currentAccuracy / M - currentCnnOnlyAccuracy / M + 0.1, probabilities[i * M:(i + 1) * M, :]))
+              np.append(b_prob, probabilities[i * M:(i + 1) * M, :], axis = 0)
           if currentAccuracy / M < currentCnnOnlyAccuracy / M - 0.1:
-              w_prob.append((-currentAccuracy / M + currentCnnOnlyAccuracy / M - 0.1, probabilities[i * M:(i + 1) * M, :]))
+              np.append(w_prob, probabilities[i * M:(i + 1) * M, :], axis = 0)
           cnnOnlyAccuracy += currentCnnOnlyAccuracy
           totalAccuracy += currentAccuracy
 
@@ -94,9 +94,9 @@ for M in rangeM:
           print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/remainder))
           print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
           if currentAccuracy / remainder > currentCnnOnlyAccuracy / remainder + 0.1:
-              b_prob.append((currentAccuracy / remainder - currentCnnOnlyAccuracy / remainder + 0.1, probabilities[patches*M:N, :]))
+              np.append(b_prob, probabilities[patches*M:N, :], axis = 0)
           if currentAccuracy / remainder < currentCnnOnlyAccuracy / remainder - 0.1:
-              w_prob.append((-currentAccuracy / remainder + currentCnnOnlyAccuracy / remainder - 0.1, probabilities[patches*M:N, :]))
+              np.append(w_prob, probabilities[patches*M:N, :], axis = 0)
           cnnOnlyAccuracy += currentCnnOnlyAccuracy
           totalAccuracy += currentAccuracy
       sys.stdout.flush()
@@ -109,5 +109,6 @@ print (rangeM, hmmTotalAccuracy)
 # print (totalAccuracy/val_set.lengths[-1])
 print ("Without HMM: Total accuracy rate")
 print (cnnOnlyAccuracy/val_set.lengths[-1])
+print (b_prob)
 np.save("good_prob_hmm", b_prob)
 np.save("bad_prob_hmm", w_prob)
