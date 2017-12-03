@@ -32,7 +32,7 @@ def main():
 # Outputs processed pitches in result_file
 def baseline_tracking(audio_file, result_file=None):
 	start = time.clock()
-	y, sr = librosa.load(audio_file)
+	y, sr = librosa.load(audio_file, sr=database_sr)
 	print('Audio file loaded: ' + audio_file)
 	print('{:f}s for loading the audio file.'.format(time.clock()-start))
 
@@ -135,4 +135,4 @@ def evaluation_error(gt, pred):
 	plot(pitches4, 'pitches4')
 	plot(pitches, 'pitches')
 
-main()
+# main()
