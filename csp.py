@@ -5,6 +5,7 @@ import collections, util, copy
 
 ## Taken from CS221 scheduling starter code
 
+gibbsMaxIter = 1000
 # General code for representing a weighted CSP (Constraint Satisfaction Problem).
 # All variables are being referenced by their index instead of their original
 # names.
@@ -187,7 +188,7 @@ class GibbsSampling():
         iterations = 0
         optimalWeight = -float('inf')
         optimalAssignment = {}
-        while diff > 0.00001 and iterations < 1000:
+        while diff > 0.001 and iterations < gibbsMaxIter:
             for var in csp.variables:
                 # print ("Currently dealing with variable %d" % var)
                 # unassign variable

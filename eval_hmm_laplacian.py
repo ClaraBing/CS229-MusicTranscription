@@ -1,5 +1,5 @@
 import numpy as np
-from pitch_contour import PitchContour
+from pitch_contour import PitchContour, transition_probability
 from PitchEstimationDataSet import PitchEstimationDataSet
 import sys
 
@@ -70,8 +70,8 @@ for mu in rangeMu:
           if remainder > 0:
               # print ('Fragment %d to %d' % (patches * M, N))
               pitch_contour = PitchContour()
-              pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
-              pitch_contour.setStartProbability(lambda v : transitions[(lastBin, v)])
+              # pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
+              pitch_contour.setStartProbability(lambda v : transition_probability(lastBin, v, mu, sigma))
               # print ("Setting notes for the CSP")
               pitch_contour.setNotes(remainder, K, probabilities[patches*M:N, :], bins[patches*M:N, :])
               # print ("Solving CSP...")
@@ -94,4 +94,3 @@ for key, v in hmmTotalAccuracy.items():
 # print (totalAccuracy/val_set.lengths[-1])
 print ("Without HMM: Total accuracy rate")
 print (cnnOnlyAccuracy/val_set.lengths[-1])
-e
