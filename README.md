@@ -1,6 +1,12 @@
 # Automatic Melody Transcription
 Automatic melody transcription for multitrack (monophonic) audios. An input audio (`.wav`) is first segmented to short time intervals and transformed to corresponding spectrograms, on which a CNN is run to estimate the probabilities of a pitch present. Finally, with the estimated pitches as inputs, a Hidden Markov Model produces one or more most probable melodies.
 
+# To-Do
+* LSTM for part 2 (Bingbin's not-working-well version)
+  * `lstm.py`: main file / entry point. Command: `python lstm.py >your_log_file`
+  * `model_lstm.py`: specifies the network structure. Currently using 2 hidden layers w/ 1024 nodes each.
+  * `LSTMDataset.py`: loads the data s.t. data/target from `__getitem__()` are of size `batch_size * seq_len`. Currently the sequence length is 1000.
+
 # Dependencies 
 The project depends on the following packages 
 - PyTorch
