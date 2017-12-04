@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 class LSTMDataSet(Dataset):
     """Pitch Estimation dataset."""
 
-    def __init__(self, annotations_dir, input_file, transform=None):
+    def __init__(self, annotations_dir, input_file, seq_len=1000, transform=None):
         """
         Args:
             annotations_dir (string): Path to the annotation folder that contains
@@ -29,7 +29,7 @@ class LSTMDataSet(Dataset):
         self.songNames = []
         self.songLengths = [] # Length of a song
         self.currentCount = 0
-        self.sequenceLen = 1000
+        self.sequenceLen = seq_len
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
                 # The ordering/lengths of songs can be determined following the code below:
@@ -76,7 +76,7 @@ class LSTMDataSet(Dataset):
         # print('modified: ')
         # print(np.asarray(input_seq, dtype=int).shape)
         # print( np.asarray(target_seq, dtype=float).shape)
-        sample = {'input': np.asarray(input_seq, dtype=int), 'freq_vec': np.asarray(target_seq, dtype=float)}
+        sample = {'input': np.asarray(input_seq, dtype=float), 'freq_vec': np.asarray(target_seq, dtype=float)}
 	# , 'song':songName, 'image_path':img_name, 'idx':idx}
 
         if self.transform:
