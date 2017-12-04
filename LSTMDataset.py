@@ -29,6 +29,7 @@ class LSTMDataSet(Dataset):
         self.songNames = []
         self.songLengths = [] # Length of a song
         self.currentCount = 0
+        self.sequenceLen = 1000
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
                 # The ordering/lengths of songs can be determined following the code below:
@@ -55,11 +56,27 @@ class LSTMDataSet(Dataset):
         # print("songId: " + str(songId))
         # print('idx: '+str(idx))
         # print(self.lengths)
-        print("pitches size", len(self.pitches), len(self.pitches[0]))
         pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
         # print('pitchId: ' + str(pitchId))
         # np.transpose: change from H*W*C to C*H*W
-        sample = {'input': np.asarray(self.lstm_input[idx], dtype=int), 'freq_vec': self.pitches[songId][pitchId]}
+        # print(np.asarray(self.lstm_input[idx], dtype=int).shape)
+        input_seq = self.lstm_input[idx-min(pitchId, self.sequenceLen):idx]
+        # print('input:', type(input_seq))
+        # print(input_seq.shape)
+        target_seq = self.pitches[songId][max(0, pitchId-self.sequenceLen):pitchId]
+        # print('target: ', type(target_seq))
+        # print(len(target_seq))
+        # print(len(target_seq[0]))
+        if pitchId < self.sequenceLen:
+            input_seq = np.concatenate((np.zeros((self.sequenceLen-len(input_seq), 109)), input_seq), 0)
+            # print('before concat: ', np.asarray(target_seq).shape)
+            target_seq = [[0]*109]*(self.sequenceLen-len(target_seq)) + target_seq
+            # print('after concat: ', np.asarray(target_seq).shape)
+        # sample = {'input': np.asarray(self.lstm_input[idx], dtype=int), 'freq_vec': np.asarray(self.pitches[songId][pitchId])}
+        # print('modified: ')
+        # print(np.asarray(input_seq, dtype=int).shape)
+        # print( np.asarray(target_seq, dtype=float).shape)
+        sample = {'input': np.asarray(input_seq, dtype=int), 'freq_vec': np.asarray(target_seq, dtype=float)}
 	# , 'song':songName, 'image_path':img_name, 'idx':idx}
 
         if self.transform:

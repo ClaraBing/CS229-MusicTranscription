@@ -11,14 +11,24 @@ import sys
 from time import time
 
 # TODO: command line args + kwargs
+def batchify(data, bsz):
+    # Work out how cleanly we can divide the dataset into bsz parts.
+    nbatch = data.size(0) // bsz
+    # Trim off any extra elements that wouldn't cleanly fit (remainders).
+    data = data.narrow(0, 0, nbatch * bsz)
+    # Evenly divide the data across the bsz batches.
+    data = data.view(bsz, -1).t().contiguous()
+    if args.cuda:
+        data = data.cuda()
+    return data
 
 # data
 annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
 train_set = LSTMDataSet(annotations_train, '/root/CS229-MusicTranscription/dataset/val_lstm_input.npy')
-train_loader = DataLoader(train_set, batch_size=1, shuffle=True)
+train_loader = DataLoader(train_set, batch_size=32, shuffle=True)
 
 # model
-model = LSTMMultiNotes()
+model = LSTMMultiNotes(1024, 2, 32)
 model.cuda()
 
 loss_function = nn.NLLLoss()
@@ -30,6 +40,8 @@ def train(model, train_loader, criterion, num_epoch):
         for idx, dictionary in enumerate(train_loader):
             batch_start = time()
             data, target = dictionary['input'], dictionary['freq_vec']
+            data = torch.transpose(data, 1,0)
+            target = torch.transpose(target, 1,0)
             data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.FloatTensor)
             data, target = data.cuda(), target.cuda()
 
