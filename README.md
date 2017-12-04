@@ -6,7 +6,7 @@ Automatic melody transcription for multitrack (monophonic) audios. An input audi
   * `lstm.py`: main file / entry point. Command: `python lstm.py >your_log_file`
   * `model_lstm.py`: specifies the network structure. Currently using 2 hidden layers w/ 1024 nodes each.
   * `LSTMDataset.py`: loads the data s.t. data/target from `__getitem__()` are of size `batch_size * seq_len`. Currently the sequence length is 1000.
-  * Note: curently the training loss is not decreasing. Possible reasons include: buggy implementation; suboptimal hyperparameters; inappropriate sequence length for LSTM.
+  * **Note**: curently the training loss is not decreasing. **Possible reasons** include: buggy implementation; suboptimal hyperparameters; inappropriate sequence length for LSTM.
 
 # Dependencies 
 The project depends on the following packages 
