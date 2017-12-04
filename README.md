@@ -77,6 +77,12 @@ python inference.py
 ```
 This will run the entire inference process on a given song by computing the spectogram images, saving them in a directory, then performing pitch estimation on each time frame using the pre-trained CNN and finally perform pitch-tracking. The result will then be converted into a MIDI file. 
 
+# Documentation
+* [Milestone](https://www.overleaf.com/12132890syqfthdckmgj#/46086031/)
+* Final Report (to be released)
+  * [Google spreadsheet](https://docs.google.com/spreadsheets/d/1KYRvSyM2JVV2ZiFddUcCX4tu9Kxq0nLXLjpy8P8qIZE/edit#gid=0) for HMM results
+* Poster (to be released)
+
 # References
 * **MedleyDB: A Multitrack Dataset for Annotation-Intensive MIR Research** by Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan Pablo, 2014
 * **[Deep salience representations for f0 estimation in polyphonic music](http://www.justinsalamon.com/uploads/4/3/9/4/4394963/bittner_deepsalience_ismir_2017.pdf)** by Bittner, R and McFee, Brian and Salamon, Justin and Li, Peter and Bello, J., 2017.
