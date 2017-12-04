@@ -26,11 +26,9 @@ optimizer = optim.Adam(model.parameters())
 kwargs = {}
 
 # train
-annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
+annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
 train_set = LSTMDataSet(annotations_train, '/root/CS229-MusicTranscription/dataset/val_lstm_input.npy')
 train_loader = DataLoader(train_set, batch_size=1, shuffle=True)
-
-print("train loader",len(train_loader.dataset))
 
 model.train()
 errors = []
