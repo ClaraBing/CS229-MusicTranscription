@@ -11,3 +11,4 @@ spec_examples/
 *.tar
 *.csv
 *.npy
+*.png

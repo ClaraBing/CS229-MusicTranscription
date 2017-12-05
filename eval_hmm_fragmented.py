@@ -37,8 +37,9 @@ transitions = np.load(trained_mle).item()
 hmmTotalAccuracy = []
 # rangeM = [20, 50, 100, 200, 300, 500, 1000]
 # for M in [50, 100, 200, 300, 400, 500]:
-rangeM = [300]
-for M in rangeM:
+M = 300
+rangeT=[0.7, 0.75, 0.65]
+for threshold in rangeT:
   totalAccuracy = 0
   cnnOnlyAccuracy = 0
   offset = 0
@@ -65,7 +66,7 @@ for M in rangeM:
       sys.stdout.flush()
       for i in range(patches):
           # print ('Fragment %d to %d' % (i * M, (i + 1) * M))
-          pitch_contour = PitchContour()
+          pitch_contour = PitchContour(threshold = threshold)
           pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
           pitch_contour.setStartProbability(lambda v : transitions[(lastBin, v)])
           # print ("Setting notes for the CSP")
@@ -96,18 +97,21 @@ for M in rangeM:
           # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
           cnnOnlyAccuracy += currentCnnOnlyAccuracy
           totalAccuracy += currentAccuracy
+
+      np.save("good_prob_hmm_refined"+threshold, b_prob)
+      # np.save("good_bin_hmm", b_bin)
+      np.save("bad_prob_hmm_refined"+threshold, w_prob)
+      b_prob = np.zeros((1,K))
+      w_prob = np.zeros((1,K))
       sys.stdout.flush()
   hmmTotalAccuracy.append(totalAccuracy/val_set.lengths[-1])
 
 
 
-print (rangeM, hmmTotalAccuracy)
+print (rangeT, hmmTotalAccuracy)
 # print ("With HMM: Total accuracy rate")
 # print (totalAccuracy/val_set.lengths[-1])
 print ("Without HMM: Total accuracy rate")
 print (cnnOnlyAccuracy/val_set.lengths[-1])
-np.save("good_prob_hmm_refined", b_prob)
-# np.save("good_bin_hmm", b_bin)
-np.save("bad_prob_hmm_refined", w_prob)
-# np.save("bad_bin_hmm", w_bin)
 
+# np.save("bad_bin_hmm", w_bin)

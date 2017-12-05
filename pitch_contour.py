@@ -45,7 +45,7 @@ def transition_probability(binbefore, binafter, mu, sigma):
         return 1.0 / 5 # Uniform distribution
 
 class PitchContour(CSP):
-    def __init__(self, emission='multinomial', transmission='mle', start='uniform', mu=0.4, sigma=2.4):
+    def __init__(self, emission='multinomial', transmission='mle', start='uniform', mu=0.4, sigma=2.4, threshold=0.7):
         super(PitchContour, self).__init__()
         self.probStart = None
         self.probTrans = None
@@ -55,6 +55,7 @@ class PitchContour(CSP):
         self.startMode = start
         self.mu = mu
         self.sigma = sigma
+        self.threshold = threshold
 
     # Set the start probability of the start state
     def setStartProbability(self, probability):
@@ -98,7 +99,7 @@ class PitchContour(CSP):
 
         for i in range(N):
             # Add variable and constraint that variable is in the set of bins
-            if probabilities[i][0] > 0.8:
+            if probabilities[i][0] > self.threshold:
               self.add_variable(i, [bins[i][0]])
             else:
               self.add_variable(i, bins[i])
