@@ -28,8 +28,8 @@ def batchify(data, bsz):
     return data
 
 # data
-annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
-train_set = LSTMDataSet(annotations_train, '/root/CS229-MusicTranscription/dataset/val_lstm_input.npy')
+annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
+train_set = LSTMDataSet(annotations_train, '/root/CS229-MusicTranscription/dataset/train_lstm_input.npy')
 train_loader = DataLoader(train_set, batch_size=32, shuffle=True)
 
 # model
