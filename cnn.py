@@ -12,6 +12,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
+from collections import Counter
 # our code
 from PitchEstimationDataSet import *
 from model import *
@@ -80,6 +81,8 @@ annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELOD
 test_set = PitchEstimationDataSet(annotations_test, '/root/data/test')
 test_loader = DataLoader(test_set, shuffle=False, # do not shuffle: the original ordering is needed for matching w/ annotations (for HMM)
     batch_size = args.test_batch_size, **kwargs) # batch = 1
+
+raise ValueError('should stop here')
 
 model = Net()
 if args.cuda:

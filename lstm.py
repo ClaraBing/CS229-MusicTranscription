@@ -22,17 +22,19 @@ def batchify(data, bsz):
         data = data.cuda()
     return data
 
+batch_size = 32
+
 # data
 annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
-train_set = LSTMDataSet(annotations_train, '/root/CS229-MusicTranscription/dataset/val_lstm_input.npy')
-train_loader = DataLoader(train_set, batch_size=32, shuffle=True)
+train_set = LSTMDataSet(annotations_train, '/root/CS229-MusicTranscription/dataset/val_lstm_input.npy', seq_len=500)
+train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 
 # model
-model = LSTMMultiNotes(1024, 2, 32)
+model = LSTMMultiNotes(1024, 2, batch_size)
 model.cuda()
 
 loss_function = nn.NLLLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.01)
+optimizer = optim.SGD(model.parameters(), lr=0.001)
 
 def train(model, train_loader, criterion, num_epoch):
     model.train()

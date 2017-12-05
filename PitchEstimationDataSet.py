@@ -7,6 +7,7 @@ import numpy as np
 from torchvision import transforms, utils
 from util import read_melody
 from torch.utils.data import Dataset
+from collections import Counter
 
 class PitchEstimationDataSet(Dataset):
     """Pitch Estimation dataset."""
@@ -41,6 +42,9 @@ class PitchEstimationDataSet(Dataset):
                 self.currentCount += len(new_bin_melody)
                 self.pitches.append(new_bin_melody)
                 # print (self.currentCount)
+        print('Class count from PitchEstimationDataSet:')
+        print(Counter([p for pitches in self.pitches for p in pitches]))
+
     def __len__(self):
         # print (self.currentCount)
         return self.currentCount

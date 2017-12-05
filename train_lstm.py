@@ -5,9 +5,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-
+from time import time
 from LSTMDataset import *
 from util import *
+from torch.autograd import Variable
+from model_lstm import *
 
 torch.manual_seed(1)
 
@@ -18,12 +20,12 @@ n_epochs = 5
 n_batch = 9
 batch_size = 32
 
-model =  nn.LSTM(109,1024,2)
+#model =  nn.LSTM(109,1024,2)
+model = LSTMMultiNotes()
 model.cuda()
 
 optimizer = optim.Adam(model.parameters())
-
-kwargs = {}
+optimizer = optim.SGD(model.parameters(), lr=0.01)
 
 # train
 annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
@@ -35,10 +37,9 @@ errors = []
 for epoch in range(n_epochs):
     training_loss = 0
     for idx, dictionary in enumerate(train_loader):
-        print("dic", dictionary['input'])
+        print(idx)
         batch_start = time()
         data, target = dictionary['input'], dictionary['freq_vec']
-        print("data, target",data, target)
         data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.FloatTensor)
         data, target = data.cuda(), target.cuda()
         
@@ -48,9 +49,10 @@ for epoch in range(n_epochs):
         #target = autograd.Variable(torch.FloatTensor(Ytrain_lst[i]))
         model.hidden = model.init_hidden()
         output = model(data)
-        #last_output = output[-1]
+        last_output = output[-1]
         loss = nn.MultiLabelSoftMarginLoss()
-        err = loss(last_output, target)
+        err = loss(output, target)
+#        err = loss(last_output, target)
         training_loss+=err.data[0]
 #         if (len(errors)>100):
 #             break

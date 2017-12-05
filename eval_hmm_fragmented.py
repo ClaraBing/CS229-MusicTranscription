@@ -4,12 +4,22 @@ from PitchEstimationDataSet import PitchEstimationDataSet
 import sys
 
 debug = False
+K=5
+b_prob = np.zeros((1,K))
+w_prob = np.zeros((1,K))
 
-def getNumberOfHits(ground_truth, prediction, N):
+def getNumberOfHits(ground_truth, prediction, N, probs=None):
+    global b_prob
+    global w_prob
     numCorrect = 0
     for i in range(N):
           if ground_truth[i] == prediction[i]:
+            if probs is not None:
+              b_prob = np.append(b_prob, probs[i,:].reshape((1,K)), axis = 0)
             numCorrect +=1
+          else:
+            if probs is not None:
+              w_prob = np.append(w_prob, probs[i,:].reshape((1,K)), axis = 0)
     return numCorrect
 
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
@@ -23,11 +33,6 @@ validation_inference = np.load(filepath)
 trained_mle = "dataset/transitions_mle.npy" # Path to saves parameters for HMM
 transitions = np.load(trained_mle).item()
 
-# Save probabilities that give best results for HMM and worst result for HMM
-K=5
-b_prob = np.zeros((1,K))
-w_prob = np.zeros((1,K))
-
 # Run inference on each song
 hmmTotalAccuracy = []
 # rangeM = [20, 50, 100, 200, 300, 500, 1000]
@@ -38,7 +43,7 @@ for M in rangeM:
   cnnOnlyAccuracy = 0
   offset = 0
 
-  for songID in range(1):
+  for songID in range(len(val_set.songNames)):
       songName = val_set.songNames[songID]
       print ("Evaluating for " + songName)
       N = val_set.songLengths[songID]
@@ -68,14 +73,10 @@ for M in rangeM:
           # print ("Solving CSP...")
           solution = pitch_contour.solve()
           lastBin = solution[M-1]
-          currentAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], solution, M)
+          currentAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], solution, M, probabilities[i*M:(i+1)*M, :])
           currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], bins[:, 0][i*M:(i+1)* M], M)
           # print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/M))
           # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/M))
-          if currentAccuracy / M > currentCnnOnlyAccuracy / M + 0.1:
-              np.append(b_prob, probabilities[i * M:(i + 1) * M, :], axis = 0)
-          if currentAccuracy / M < currentCnnOnlyAccuracy / M - 0.1:
-              np.append(w_prob, probabilities[i * M:(i + 1) * M, :], axis = 0)
           cnnOnlyAccuracy += currentCnnOnlyAccuracy
           totalAccuracy += currentAccuracy
 
@@ -89,14 +90,10 @@ for M in rangeM:
           pitch_contour.setNotes(remainder, K, probabilities[patches*M:N, :], bins[patches*M:N, :])
           # print ("Solving CSP...")
           solution = pitch_contour.solve()
-          currentAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], solution, remainder)
+          currentAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], solution, remainder, probabilities[patches*M:N,:])
           currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], bins[:, 0][patches*M:N], remainder)
-          print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/remainder))
-          print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
-          if currentAccuracy / remainder > currentCnnOnlyAccuracy / remainder + 0.1:
-              np.append(b_prob, probabilities[patches*M:N, :], axis = 0)
-          if currentAccuracy / remainder < currentCnnOnlyAccuracy / remainder - 0.1:
-              np.append(w_prob, probabilities[patches*M:N, :], axis = 0)
+          # print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/remainder))
+          # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
           cnnOnlyAccuracy += currentCnnOnlyAccuracy
           totalAccuracy += currentAccuracy
       sys.stdout.flush()
@@ -109,6 +106,8 @@ print (rangeM, hmmTotalAccuracy)
 # print (totalAccuracy/val_set.lengths[-1])
 print ("Without HMM: Total accuracy rate")
 print (cnnOnlyAccuracy/val_set.lengths[-1])
-print (b_prob)
-np.save("good_prob_hmm", b_prob)
-np.save("bad_prob_hmm", w_prob)
+np.save("good_prob_hmm_refined", b_prob)
+# np.save("good_bin_hmm", b_bin)
+np.save("bad_prob_hmm_refined", w_prob)
+# np.save("bad_bin_hmm", w_bin)
+
