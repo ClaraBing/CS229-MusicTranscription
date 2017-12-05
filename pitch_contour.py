@@ -98,7 +98,10 @@ class PitchContour(CSP):
 
         for i in range(N):
             # Add variable and constraint that variable is in the set of bins
-            self.add_variable(i, bins[i])
+            if probabilities[i][0] > 0.8:
+              self.add_variable(i, [bins[i][0]])
+            else:
+              self.add_variable(i, bins[i])
             self.add_unary_factor(i, probEmission(i))
             if i > 0:
                 self.add_binary_factor(i-1, i, probTrans)
