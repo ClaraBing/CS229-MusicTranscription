@@ -141,10 +141,10 @@ def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Anno
 ###################
 
 # Input: N number of notes,
-# frequencies: array of size N with frequencies in Hz
+# bins: array of size N with bins
 # output_name: name of the file to be saved
 # duration of each notes in s.
-def outputMIDI(N, frequencies, output_name,  duration = 0.01):
+def outputMIDI(N, bins, output_name,  duration = 0.01):
 	# Creates a MIDI file with one track
 	track    = 0
 	channel  = 0
@@ -155,19 +155,20 @@ def outputMIDI(N, frequencies, output_name,  duration = 0.01):
 	MyMIDI = MIDIFile(1)  # One track, defaults to format 1 (tempo track is created
 	                      # automatically)
 	MyMIDI.addTempo(track, time, tempo)
-	lastfrequency = 0.0
+	lastBin = 0
 	currentfreq_length = 0
 	for i in range(N):
 		# Ignore frequencies 0, this means there's a silence
-		if frequencies[i] == lastfrequency:
+		if bins[i] == lastBin:
 			currentfreq_length+=1
 		else:
-			if lastfrequency > 0.0:
+			if lastBin > 0:
+				lastfrequency = getFrequencyFromBin(lastBin)
 				midiNote = int(round(21 + 12 * np.log(lastfrequency/ 27.5) / np.log(2)))
 				MyMIDI.addNote(track, channel, midiNote, time, currentfreq_length * duration, 100)
-				print (midiNote, time)
+			print (lastBin, time)
 			time += duration * currentfreq_length
-			lastfrequency = frequencies[i]
+			lastBin = bins[i]
 			currentfreq_length = 1
 	binfile = open('midiOutput/'+output_name + ".mid", 'wb')
 	MyMIDI.writeFile(binfile)

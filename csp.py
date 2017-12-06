@@ -206,8 +206,8 @@ class GibbsSampling():
             currentWeight = newWeight
             iterations += 1
 
-        print (("Converged in %d iterations") % iterations)
-        print ((" Optimal weight is %f") % optimalWeight)
+#         print (("Converged in %d iterations") % iterations)
+#         print ((" Optimal weight is %f") % optimalWeight)
         return optimalAssignment
 
 class BacktrackingSearch():
