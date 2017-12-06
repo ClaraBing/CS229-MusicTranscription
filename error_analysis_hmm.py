@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-bad_prob = np.load("bad_prob_hmm_refined.npy")
+bad_prob = np.load("eval_hmm/bad_prob_hmm_refined0.65.npy")
 # bad_bin = np.load("bad_bin_hmm.npy")
-good_prob = np.load("good_prob_hmm_refined.npy")
+good_prob = np.load("eval_hmm/good_prob_hmm_refined0.65.npy")
 # good_bin = np.load("good_bin_hmm.npy")
 
 
@@ -11,7 +11,7 @@ good_prob = np.load("good_prob_hmm_refined.npy")
 
 # Plot most probable probabilities
 data = [good_prob[:,0], bad_prob[:,0]]
-plt.hist(data, alpha=0.7, label=['good', 'bad'], bins=100)
+plt.hist(data, alpha=0.7, label=['good', 'bad'], bins=50)
 plt.title("Repartition of 1st probabilities")
 plt.legend(loc='upper right')
 plt.yscale('log', nonposy='clip')
@@ -19,7 +19,7 @@ plt.show()
 
 # Plot 2nd most probable bins
 data = [good_prob[:,1], bad_prob[:,1]]
-plt.hist(data, alpha=0.7, label=['good', 'bad'], bins=100)
+plt.hist(data, alpha=0.7, label=['good', 'bad'], bins=50)
 plt.title("Repartition of 2nd probabiltiies")
 plt.legend(loc='upper right')
 plt.yscale('log', nonposy='clip')
