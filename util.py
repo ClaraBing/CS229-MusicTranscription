@@ -156,6 +156,7 @@ def outputMIDI(N, bins, output_name, duration_sec=1, tempo=60):
 	MyMIDI.addTempo(track, time, tempo)
 	lastBin = 0
 	currentfreq_length = 0
+	midiNotes = []
 	for i in range(N):
 		# Ignore frequencies 0, this means there's a silence
 		if bins[i] == lastBin:
@@ -167,10 +168,13 @@ def outputMIDI(N, bins, output_name, duration_sec=1, tempo=60):
 				lastfrequency = getFrequencyFromBin(lastBin)
 				midiNote = int(round(21 + 12 * np.log(lastfrequency/ 27.5) / np.log(2)))
 				MyMIDI.addNote(track, channel, midiNote, time, noteduration_beats, 100)
-			print (lastBin, time)
+				if midiNote > 255:
+					print (midiNote, lastBin, lastfrequency,time)
+				midiNotes.append(midiNote)
 			time += noteduration_beats
 			lastBin = bins[i]
 			currentfreq_length = 1
+	np.save('midiOutput/'+output_name, np.array(midiNotes))
 	binfile = open('midiOutput/'+output_name + ".mid", 'wb')
 	MyMIDI.writeFile(binfile)
 	binfile.close()
