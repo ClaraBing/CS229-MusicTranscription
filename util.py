@@ -150,7 +150,7 @@ def outputMIDI(N, bins, output_name, duration_sec=1, tempo=60):
 	channel  = 0
 	time     = 0    # In beats
 	volume   = 100  # 0-127, as per the MIDI standard
-
+	min_beat = 1.0/8
 	MyMIDI = MIDIFile(1)  # One track, defaults to format 1 (tempo track is created
 	                      # automatically)
 	MyMIDI.addTempo(track, time, tempo)
@@ -163,14 +163,21 @@ def outputMIDI(N, bins, output_name, duration_sec=1, tempo=60):
 		else:
 			noteduration_s = 2 * currentfreq_length * duration_sec
 			noteduration_beats = noteduration_s / 60 * tempo
+			noteduration_beats = max(min_beat, round(4 * noteduration_beats)/4)
 			if lastBin > 0:
 				lastfrequency = getFrequencyFromBin(lastBin)
 				midiNote = int(round(21 + 12 * np.log(lastfrequency/ 27.5) / np.log(2)))
 				MyMIDI.addNote(track, channel, midiNote, time, noteduration_beats, 100)
-			print (lastBin, time)
 			time += noteduration_beats
 			lastBin = bins[i]
 			currentfreq_length = 1
+	noteduration_s = 2 * currentfreq_length * duration_sec
+	noteduration_beats = noteduration_s / 60 * tempo
+	noteduration_beats = max(min_beat, round(4 * noteduration_beats)/4)
+	if lastBin > 0:
+		lastfrequency = getFrequencyFromBin(lastBin)
+		midiNote = int(round(21 + 12 * np.log(lastfrequency/ 27.5) / np.log(2)))
+		MyMIDI.addNote(track, channel, midiNote, time, noteduration_beats, 100)
 	binfile = open('midiOutput/'+output_name + ".mid", 'wb')
 	MyMIDI.writeFile(binfile)
 	binfile.close()
