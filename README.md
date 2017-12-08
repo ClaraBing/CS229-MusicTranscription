@@ -3,6 +3,7 @@ Automatic melody transcription for multitrack (monophonic) audios. An input audi
 
 # To-Do
 * Longer context for data (15ms)
+  * more data
 * Data augmentation
   * changing volume
   * adding noise
