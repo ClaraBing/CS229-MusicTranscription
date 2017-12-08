@@ -5,7 +5,7 @@ import os
 import torch
 import numpy as np
 from torchvision import transforms, utils
-from util import read_melody
+from util import read_melody_avg
 from torch.utils.data import Dataset
 from collections import Counter
 
@@ -28,6 +28,7 @@ class PitchEstimationDataSet(Dataset):
         self.lengths = [] #Cumulated lengths
         self.numberOfSongs = len(os.listdir(annotations_dir))
         self.songNames = []
+        self.rawNames = []
         self.songLengths = [] # Length of a song
         self.currentCount = 0
         for filename in os.listdir(annotations_dir):
@@ -35,14 +36,14 @@ class PitchEstimationDataSet(Dataset):
                 # The ordering/lengths of songs can be determined following the code below:
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
-                new_bin_melody, _ = read_melody(audioName, annotations_dir) # len(new_bin_melody) denotes the length of a song
+                new_bin_melody, _ = read_melody_avg(audioName, annotations_dir) # len(new_bin_melody) denotes the length of a song
                 new_bin_melody = new_bin_melody[:-1] # remove the last entry to avoid errors at boundaries (dirty but fast @v@)
                 self.lengths.append(len(new_bin_melody)+ self.currentCount)
                 self.songLengths.append(len(new_bin_melody))
                 self.currentCount += len(new_bin_melody)
                 self.pitches.append(new_bin_melody)
                 # print (self.currentCount)
-        print('Class count from PitchEstimationDataSet:')
+        print('Class count from PitchEstimationDataSet (total={:d}):'.format(sum([len(pitches) for pitches in self.pitches])))
         print(Counter([p for pitches in self.pitches for p in pitches]))
 
     def __len__(self):
@@ -61,7 +62,7 @@ class PitchEstimationDataSet(Dataset):
         # print(self.lengths)
         pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
         # print('pitchId: ' + str(pitchId))
-        img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_MIX_"+str(pitchId)+".png")
+        img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_RAW_"+str(pitchId)+".png") # TODO: was '_MIX_' rather than '_RAW_'
         # np.transpose: change from H*W*C to C*H*W
         image = np.transpose(ndimage.imread(img_name, mode='RGB'), (2,0,1))
         sample = {'image': image, 'frequency': self.pitches[songId][pitchId]}# , 'song':songName, 'image_path':img_name, 'idx':idx}

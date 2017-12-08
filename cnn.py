@@ -28,7 +28,7 @@ parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 32)')
 parser.add_argument('--test-batch-size', type=int, default=1, metavar='N',
                     help='input batch size for testing (default: 32)')
-parser.add_argument('--epochs', type=int, default=10, metavar='N',
+parser.add_argument('--epochs', type=int, default=100, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                     help='learning rate (default: 0.01)')
@@ -61,28 +61,27 @@ if args.cuda:
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
 # train
-annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
-training_set = PitchEstimationDataSet(annotations_train, '/root/data/train/')
+annotations_train = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/train/'
+training_set = PitchEstimationDataSet(annotations_train, '/root/new_data/orig/train/')
 train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, **kwargs)
-#    batch_size = args.batch_size, shuffle = True, **kwargs)
 
 # val
-annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
-val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
-val_loader = DataLoader(val_set, shuffle=False, **kwargs)
-#    batch_size = args.batch_size, shuffle = True, **kwargs)
+annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/val/'
+val_set = PitchEstimationDataSet(annotations_val, '/root/new_data/orig/val/')
+val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
+    # batch_size = args.batch_size, shuffle=False, **kwargs)
 
 # test
-annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/test/'
+annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/test/'
 # test_set = PitchEstimationDataSet(annotations_test, 'root/data/test', transform=transforms.Compose([
 #                transforms.ToTensor(),
 #                transforms.Normalize((0.1307,), (0.3081,))
 #                ]))
-test_set = PitchEstimationDataSet(annotations_test, '/root/data/test')
+test_set = PitchEstimationDataSet(annotations_test, '/root/new_data/orig/test')
 test_loader = DataLoader(test_set, shuffle=False, # do not shuffle: the original ordering is needed for matching w/ annotations (for HMM)
     batch_size = args.test_batch_size, **kwargs) # batch = 1
 
-raise ValueError('should stop here')
+# raise ValueError('should stop here')
 
 model = Net()
 if args.cuda:
@@ -238,11 +237,11 @@ if __name__ == '__main__':
             }, is_best, filename=args.save_dir+args.save_prefix+'_epoch{:d}.pt'.format(epoch))
     
             # update lr
-            if epoch<6:
+            if epoch<100:
                 # print('checking for avg loss')
                 # avg_loss = avg_loss / args.lr_interval
                 # if prev_avg_loss - avg_loss < 0.05:
-                if epoch % 2 == 0:
+                if epoch % 30 == 0:
                     args.lr /= 10
                     for param_group in optimizer.param_groups:
                         print(param_group['lr'])

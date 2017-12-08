@@ -7,6 +7,7 @@ import matplotlib.pylab as plt
 from midiutil.MidiFile import MIDIFile
 import numpy as np
 import os, math
+from collections import Counter
 
 # Function list:
 
@@ -111,6 +112,42 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
             count+=1
     return pitch_bin_list, pitch_freq_list
 
+# average notes over 15ms
+def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/", sr_ratio = 132):
+
+    csv_file = dir+folder_name+"_MELODY1.csv"
+    pitch_bin_list = []
+    pitch_freq_list = []
+    with open(csv_file) as f:
+        reader = csv.DictReader(f)
+        # for count in range(0, len(reader), sr_ratio):
+        count = 0
+        bin_queue = []
+        for row in reader:
+            # sr_ratio: ratio between the sampling rate (sr) of the annotation and the sr of the spectrogram.
+            # Currently the ratio is 2, i.e. a spectrogram corresponds to every other line in the annotation.
+            count += 1
+            newFreq = float(list(row.values())[0])
+            if newFreq > 0:
+              bin_queue += getBinFromFrequency(newFreq),
+            else:
+              bin_queue += 0,
+            # freq_queue += float(list(row.values())[0]),
+            if (count-1) % sr_ratio:
+              continue
+            # print(row)
+            # newFreq = sum(freq_queue) / len(freq_queue)
+            pitch_bin_list.append(Counter(bin_queue).most_common(1)[0][0]) # TODO: append most common elem
+            bin_queue = []
+            # Note: comparing float 0.0 to 0 results in **False**
+            # if newFreq > 0:
+            #     pitch_bin_list.append(getBinFromFrequency(newFreq))
+            # else:
+            #     pitch_bin_list.append(0)
+            pitch_freq_list.append(newFreq)
+    return pitch_bin_list, pitch_freq_list
+
+# read melodies in vector form for LSTM
 def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio = 2):
 
     csv_file = dir+folder_name+"_MELODY1.csv"
@@ -235,14 +272,16 @@ def smooth(x,window_len=11,window='hanning'):
 
 def data_gen_wrapper():
     raw_list = open('/root/new_data/raw_list.txt', 'r').readlines()
-    outDir = '/root/new_data/audios/'
+    outDir = '/root/new_data/orig/'
     for path in raw_list:
        path = path.strip()
        # e.g. path = '.../Audios/AmarLal_SpringDay1/AmarLal_SpringDay1_RAW/AmarLal_SpingDay1_RAW_01_13.wav'
        data_dir = path[:path.find('RAW')+4]
        audioName = path[path.find('RAW')+4:-4] # keep prev path + '.wav'
        fext = 'wav'
-       wav2spec_data(data_dir, audioName, fext, outDir)
+       curr_outDir = outDir + audioName[:-10] + '/'
+       os.mkdir(curr_outDir)
+       wav2spec_data(data_dir, audioName, fext, curr_outDir)
        print(audioName)
 
 def wav2spec_data(data_dir, audioName, fext, outDir):
@@ -254,12 +293,12 @@ def wav2spec_data(data_dir, audioName, fext, outDir):
     spec = librosa.power_to_db(S, ref=np.max)
 
     for i in range(0, spec.shape[1], 66):
-        plt.figure(figsize=(2.56, 2.56)) # 100 * 400 pixels
+        plt.figure(figsize=(2.56, 2.56)) # 256 * 256 pixels
         plt.subplot(111)
         librosa.display.specshow(spec[:, i:i+66], sr=sr)
         plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
         plt.axis('off')
-        plt.savefig('{:s}spec_{:s}_{:d}.png'.format(outDir, audioName, i))
+        plt.savefig('{:s}spec_{:s}_{:d}.png'.format(outDir, audioName, int(i/66)))
         plt.close()
 
 
