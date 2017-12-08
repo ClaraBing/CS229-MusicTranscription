@@ -150,7 +150,7 @@ def outputMIDI(N, bins, output_name, duration_sec=1, tempo=60):
 	channel  = 0
 	time     = 0    # In beats
 	volume   = 100  # 0-127, as per the MIDI standard
-
+	min_beat = 1.0/8
 	MyMIDI = MIDIFile(1)  # One track, defaults to format 1 (tempo track is created
 	                      # automatically)
 	MyMIDI.addTempo(track, time, tempo)
@@ -164,17 +164,22 @@ def outputMIDI(N, bins, output_name, duration_sec=1, tempo=60):
 		else:
 			noteduration_s = 2 * currentfreq_length * duration_sec
 			noteduration_beats = noteduration_s / 60 * tempo
+			noteduration_beats = max(min_beat, round(4 * noteduration_beats)/4)
 			if lastBin > 0:
 				lastfrequency = getFrequencyFromBin(lastBin)
 				midiNote = int(round(21 + 12 * np.log(lastfrequency/ 27.5) / np.log(2)))
 				MyMIDI.addNote(track, channel, midiNote, time, noteduration_beats, 100)
-				if midiNote > 255:
-					print (midiNote, lastBin, lastfrequency,time)
-				midiNotes.append(midiNote)
 			time += noteduration_beats
 			lastBin = bins[i]
 			currentfreq_length = 1
-	np.save('midiOutput/'+output_name, np.array(midiNotes))
+	noteduration_s = 2 * currentfreq_length * duration_sec
+	noteduration_beats = noteduration_s / 60 * tempo
+	noteduration_beats = max(min_beat, round(4 * noteduration_beats)/4)
+	if lastBin > 0:
+		lastfrequency = getFrequencyFromBin(lastBin)
+		midiNote = int(round(21 + 12 * np.log(lastfrequency/ 27.5) / np.log(2)))
+		MyMIDI.addNote(track, channel, midiNote, time, noteduration_beats, 100)
+	np.save('midiOutput/'+output_name, np.array(bins))
 	binfile = open('midiOutput/'+output_name + ".mid", 'wb')
 	MyMIDI.writeFile(binfile)
 	binfile.close()
@@ -228,6 +233,17 @@ def smooth(x,window_len=11,window='hanning'):
         y=np.convolve(w/w.sum(),s,mode='same')
         return y[window_len:-window_len+1]
 
+def data_gen_wrapper():
+    raw_list = open('/root/new_data/raw_list.txt', 'r').readlines()
+    outDir = '/root/new_data/audios/'
+    for path in raw_list:
+       path = path.strip()
+       # e.g. path = '.../Audios/AmarLal_SpringDay1/AmarLal_SpringDay1_RAW/AmarLal_SpingDay1_RAW_01_13.wav'
+       data_dir = path[:path.find('RAW')+4]
+       audioName = path[path.find('RAW')+4:-4] # keep prev path + '.wav'
+       fext = 'wav'
+       wav2spec_data(data_dir, audioName, fext, outDir)
+       print(audioName)
 
 def wav2spec_data(data_dir, audioName, fext, outDir):
 # Generate time slices of spectrogram, which will be used for CNN training
@@ -237,10 +253,10 @@ def wav2spec_data(data_dir, audioName, fext, outDir):
     S = librosa.feature.melspectrogram(y=y, sr=sr, fmax=8000, n_mels=256)
     spec = librosa.power_to_db(S, ref=np.max)
 
-    for i in range(spec.shape[1]):
+    for i in range(0, spec.shape[1], 66):
         plt.figure(figsize=(2.56, 2.56)) # 100 * 400 pixels
         plt.subplot(111)
-        librosa.display.specshow(spec[:, i:i+1], sr=sr)
+        librosa.display.specshow(spec[:, i:i+66], sr=sr)
         plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
         plt.axis('off')
         plt.savefig('{:s}spec_{:s}_{:d}.png'.format(outDir, audioName, i))
