@@ -9,6 +9,8 @@ import numpy as np
 import os, math
 from collections import Counter
 
+global_sr_ratio = 6
+
 # Function list:
 
 # Data Processing:
@@ -87,7 +89,7 @@ def getFrequencyFromBin(bin, base = 440.0):
     else:
         return base * math.pow(2.0, (bin - 58) / 12.0)
 
-def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio = 2):
+def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=global_sr_ratio):
 
     csv_file = dir+folder_name+"_MELODY1.csv"
     pitch_bin_list = []
@@ -113,7 +115,7 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
     return pitch_bin_list, pitch_freq_list
 
 # average notes over 15ms
-def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/", sr_ratio = 132):
+def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/", sr_ratio=global_sr_ratio):
 
     csv_file = dir+folder_name+"_MELODY1.csv"
     pitch_bin_list = []
@@ -148,7 +150,7 @@ def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_An
     return pitch_bin_list, pitch_freq_list
 
 # read melodies in vector form for LSTM
-def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio = 2):
+def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=global_sr_ratio):
 
     csv_file = dir+folder_name+"_MELODY1.csv"
     pitch_bin_list = []
