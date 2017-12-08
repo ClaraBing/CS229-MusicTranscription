@@ -11,10 +11,10 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 
-directory = "/root/MedleyDB_selected/Audios/" # Directory containing audio file for inference
-filename = "MusicDelta_80sRock" # Name of audio file for inference
+directory = "../MedleyDB_selected/Audios/" # Directory containing audio file for inference
+filename = "AimeeNorwich_Child_MIX" # Name of audio file for inference
 extension = "wav" # Extension of audio file
-imageOutputDirectory = "/root/inference/"+filename+"/" # Directory containing spectogram images
+imageOutputDirectory = "../inference/"+filename+"/" # Directory containing spectogram images
 cnn_weights = "output_model/conv5_13/model_conv5_train_epoch9.pt" # Path to saved weights of CNN
 trained_mle = "transitions_mle.npy" # Path to saves parameters for HMM
 saved_probabilities = "probabilities_"+filename
@@ -40,7 +40,7 @@ bins = np.zeros((N,K))
 probabilities = np.zeros((N,K))
 
 # Naively perform inference on each of the timeframes and save results
-cnn_inf = False
+cnn_inf = True
 if cnn_inf:
   print ("Pitch estimation on each frame .")
   for i in range(N):

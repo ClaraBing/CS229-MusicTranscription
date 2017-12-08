@@ -22,6 +22,61 @@ def getNumberOfHits(ground_truth, prediction, N, probs=None):
               w_prob = np.append(w_prob, probs[i,:].reshape((1,K)), axis = 0)
     return numCorrect
 
+
+# Pitch tracking using Gibbs sampling on given notes
+'''
+    Input:
+        N : number of notes
+        K : number of possibilities for one note
+        M:  length of a fragment M <= N
+        probabilities: (N,K) matrix, probabilities of each possibilities
+        bins: (N, K) matrix: possible bins for each notes
+        transitions: dictionary of transitions for MLE solver
+        threshold: threshold to use for the solver
+    Output:
+        array of length N
+'''
+
+
+def fragmented_solver(N, K, M, probabilities, bins,
+        transitions=None, threshold=0.6):
+    # Initialize CSP
+    total_solution = []
+    patches = int(N / M)   # number of patches
+    remainder = N - patches * M
+    if debug:
+        print (patches, remainder)
+    lastBin = 0
+    if debug:
+        print ("Pitch tracking on each fragment")
+    sys.stdout.flush()
+    for i in range(patches):
+        pitch_contour = PitchContour(threshold=threshold)
+        pitch_contour.setTransitionProbability(
+            lambda b1, b2: transitions[(b1, b2)])
+        pitch_contour.setStartProbability(
+            lambda v: transitions[(lastBin, v)])
+        pitch_contour.setNotes(M, K, probabilities[i * M:(i + 1) * M, :],
+            bins[i * M:(i + 1) * M, :])
+        solution = pitch_contour.solve()
+        lastBin = solution[M-1]
+        for _, v in solution.items():
+            total_solution.append(v)
+
+    if remainder > 0:
+        pitch_contour = PitchContour(threshold=threshold)
+        pitch_contour.setTransitionProbability(
+            lambda b1, b2: transitions[(b1, b2)])
+        pitch_contour.setStartProbability(
+            lambda v: transitions[(lastBin, v)])
+        pitch_contour.setNotes(remainder, K,
+            probabilities[patches*M:N, :], bins[patches*M:N, :])
+        solution = pitch_contour.solve()
+        for _, v in solution.items():
+            total_solution.append(v)
+    return total_solution
+
+
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
 val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
 
@@ -40,73 +95,36 @@ hmmTotalAccuracy = []
 M = 300
 rangeT=[0.60, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7]
 for threshold in rangeT:
-  totalAccuracy = 0
-  cnnOnlyAccuracy = 0
-  offset = 0
+    totalAccuracy = 0
+    cnnOnlyAccuracy = 0
+    offset = 0
 
-  for songID in range(len(val_set.songNames)):
-      songName = val_set.songNames[songID]
-      print ("Evaluating for " + songName)
-      N = val_set.songLengths[songID]
-      probabilities = np.zeros((N, K))
-      bins = np.zeros((N,K))
-      print ("Loading for %d notes" % N)
-      for i in range(N):
-          probabilities[i] = validation_inference[i + offset][:K][:,0]
-          probabilities[i] /= np.sum(probabilities[i])
-          bins[i] = validation_inference[i + offset][:K][:,1]
-      offset += N
-    # Initialize CSP
-    # Solve tracking problem independently on smaller portions and patch together
-      patches = int(N / M) # number of patches
-      remainder = N - patches * M
-      if debug: print (patches, remainder)
-      lastBin = 0
-      if debug: print ("Pitch tracking on each fragment")
-      sys.stdout.flush()
-      for i in range(patches):
-          # print ('Fragment %d to %d' % (i * M, (i + 1) * M))
-          pitch_contour = PitchContour(threshold = threshold)
-          pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
-          pitch_contour.setStartProbability(lambda v : transitions[(lastBin, v)])
-          # print ("Setting notes for the CSP")
-          pitch_contour.setNotes(M, K, probabilities[i * M:(i + 1) * M, :], bins[i * M:(i + 1) * M, :])
-          # print ("Solving CSP...")
-          solution = pitch_contour.solve()
-          lastBin = solution[M-1]
-          currentAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], solution, M, probabilities[i*M:(i+1)*M, :])
-          currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], bins[:, 0][i*M:(i+1)* M], M)
-          # print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/M))
-          # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/M))
-          cnnOnlyAccuracy += currentCnnOnlyAccuracy
-          totalAccuracy += currentAccuracy
-
-
-      if remainder > 0:
-          # print ('Fragment %d to %d' % (patches * M, N))
-          pitch_contour = PitchContour()
-          pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
-          pitch_contour.setStartProbability(lambda v : transitions[(lastBin, v)])
-          # print ("Setting notes for the CSP")
-          pitch_contour.setNotes(remainder, K, probabilities[patches*M:N, :], bins[patches*M:N, :])
-          # print ("Solving CSP...")
-          solution = pitch_contour.solve()
-          currentAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], solution, remainder, probabilities[patches*M:N,:])
-          currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], bins[:, 0][patches*M:N], remainder)
-          print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/remainder))
-          print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
-          cnnOnlyAccuracy += currentCnnOnlyAccuracy
-          totalAccuracy += currentAccuracy
-      print(threshold)
-      print ("With HMM: Accuracy rate on this song %f " % (totalAccuracy/val_set.lengths[songID]))
-      print ("Without HMM accuracy %f" % (cnnOnlyAccuracy/val_set.lengths[songID]))
-#      np.save("good_prob_hmm_refined"+str(threshold), b_prob)
-      # np.save("good_bin_hmm", b_bin)
- #     np.save("bad_prob_hmm_refined"+str(threshold), w_prob)
-      b_prob = np.zeros((1,K))
-      w_prob = np.zeros((1,K))
-      sys.stdout.flush()
-  hmmTotalAccuracy.append(totalAccuracy/val_set.lengths[-1])
+    for songID in range(len(val_set.songNames)):
+        songName = val_set.songNames[songID]
+        print ("Evaluating for " + songName)
+        N = val_set.songLengths[songID]
+        probabilities = np.zeros((N, K))
+        bins = np.zeros((N,K))
+        print ("Loading for %d notes" % N)
+        for i in range(N):
+            probabilities[i] = validation_inference[i + offset][:K][:,0]
+            probabilities[i] /= np.sum(probabilities[i])
+            bins[i] = validation_inference[i + offset][:K][:,1]
+            offset += N
+            solution = fragmented_solver(N, K, M, probabilities, bins,
+                transitions=transitions, threshold=threshold)
+            currentAccuracy = getNumberOfHits(val_set.pitches[songID],
+                solution, N, probabilities)
+            currentCnnOnlyAccuracy = getNumberOfHits(
+                val_set.pitches[songID], bins[:, 0], N)
+            print ("With HMM: Accuracy rate on this song %f " %
+                (currentAccuracy/N))
+            print ("Without HMM: Accuracy rate on this song %f " %
+                (currentCnnOnlyAccuracy/N))
+            cnnOnlyAccuracy += currentCnnOnlyAccuracy
+            totalAccuracy += currentAccuracy
+            sys.stdout.flush()
+            hmmTotalAccuracy.append(totalAccuracy/val_set.lengths[-1])
 
 
 
