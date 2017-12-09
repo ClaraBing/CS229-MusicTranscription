@@ -12,7 +12,7 @@ from collections import Counter
 class PitchEstimationDataSet(Dataset):
     """Pitch Estimation dataset."""
 
-    def __init__(self, annotations_dir, images_dir, transform=None):
+    def __init__(self, annotations_dir, images_dir, sr=6, transform=None):
         """
         Args:
             annotations_dir (string): Path to the annotation folder that contains
@@ -31,12 +31,13 @@ class PitchEstimationDataSet(Dataset):
         self.rawNames = []
         self.songLengths = [] # Length of a song
         self.currentCount = 0
+        self.sr = sr
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
                 # The ordering/lengths of songs can be determined following the code below:
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
-                new_bin_melody, _ = read_melody_avg(audioName, annotations_dir) # len(new_bin_melody) denotes the length of a song
+                new_bin_melody, _ = read_melody_avg(audioName, annotations_dir, self.sr) # len(new_bin_melody) denotes the length of a song
                 new_bin_melody = new_bin_melody[:-1] # remove the last entry to avoid errors at boundaries (dirty but fast @v@)
                 self.lengths.append(len(new_bin_melody)+ self.currentCount)
                 self.songLengths.append(len(new_bin_melody))
@@ -61,8 +62,8 @@ class PitchEstimationDataSet(Dataset):
         # print('idx: '+str(idx))
         # print(self.lengths)
         pitchId = idx if songId == 0 else idx - self.lengths[songId - 1]
-        # print('pitchId: ' + str(pitchId))
-        img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_RAW_"+str(pitchId)+".png") # TODO: was '_MIX_' rather than '_RAW_'
+        # NOTE: example img path: '.../train/MusicDelta_FusionJazz/spec_MusicDelta_FusionJazz_RAW_986.png', i.e. 'RAW_{img_id}' rather than 'RAW_{track_id}_{img_id}'
+        img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_RAW_"+str(pitchId)+".png") # NOTE: was '_MIX_' rather than '_RAW_'
         # np.transpose: change from H*W*C to C*H*W
         image = np.transpose(ndimage.imread(img_name, mode='RGB'), (2,0,1))
         sample = {'image': image, 'frequency': self.pitches[songId][pitchId]}# , 'song':songName, 'image_path':img_name, 'idx':idx}

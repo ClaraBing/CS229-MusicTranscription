@@ -1,6 +1,7 @@
 dataset/
+new_data
 midiOutput/
-output_model/
+output_model*/
 pitch_plots/
 spec_examples/
 *.pyc

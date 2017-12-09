@@ -1,6 +1,7 @@
 import numpy as np
 from pitch_contour import PitchContour
 from PitchEstimationDataSet import PitchEstimationDataSet
+from fragmenter_hmm_solver import fragmented_solver
 import sys
 
 debug = False
@@ -56,50 +57,14 @@ for threshold in rangeT:
           probabilities[i] /= np.sum(probabilities[i])
           bins[i] = validation_inference[i + offset][:K][:,1]
       offset += N
-    # Initialize CSP
-    # Solve tracking problem independently on smaller portions and patch together
-      patches = int(N / M) # number of patches
-      remainder = N - patches * M
-      if debug: print (patches, remainder)
-      lastBin = 0
-      if debug: print ("Pitch tracking on each fragment")
-      sys.stdout.flush()
-      for i in range(patches):
-          # print ('Fragment %d to %d' % (i * M, (i + 1) * M))
-          pitch_contour = PitchContour(threshold = threshold)
-          pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
-          pitch_contour.setStartProbability(lambda v : transitions[(lastBin, v)])
-          # print ("Setting notes for the CSP")
-          pitch_contour.setNotes(M, K, probabilities[i * M:(i + 1) * M, :], bins[i * M:(i + 1) * M, :])
-          # print ("Solving CSP...")
-          solution = pitch_contour.solve()
-          lastBin = solution[M-1]
-          currentAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], solution, M, probabilities[i*M:(i+1)*M, :])
-          currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][i*M:(i+1)* M], bins[:, 0][i*M:(i+1)* M], M)
-          # print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/M))
-          # print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/M))
-          cnnOnlyAccuracy += currentCnnOnlyAccuracy
-          totalAccuracy += currentAccuracy
-
-
-      if remainder > 0:
-          # print ('Fragment %d to %d' % (patches * M, N))
-          pitch_contour = PitchContour()
-          pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
-          pitch_contour.setStartProbability(lambda v : transitions[(lastBin, v)])
-          # print ("Setting notes for the CSP")
-          pitch_contour.setNotes(remainder, K, probabilities[patches*M:N, :], bins[patches*M:N, :])
-          # print ("Solving CSP...")
-          solution = pitch_contour.solve()
-          currentAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], solution, remainder, probabilities[patches*M:N,:])
-          currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID][patches*M:N], bins[:, 0][patches*M:N], remainder)
-          print ("With HMM: Accuracy rate on this song %f " % (currentAccuracy/remainder))
-          print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/remainder))
-          cnnOnlyAccuracy += currentCnnOnlyAccuracy
-          totalAccuracy += currentAccuracy
+      solution = fragmented_solver(N, K, M, probabilities, bins, transitions, threshold)
+      currentAccuracy = getNumberOfHits(val_set.pitches[songID], solution, N, probabilities)
+      currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID], bins[:, 0], N)
+      cnnOnlyAccuracy += currentCnnOnlyAccuracy
+      totalAccuracy += currentAccuracy
       print(threshold)
-      print ("With HMM: Accuracy rate on this song %f " % (totalAccuracy/val_set.lengths[songID]))
-      print ("Without HMM accuracy %f" % (cnnOnlyAccuracy/val_set.lengths[songID]))
+      print ("With HMM: Accuracy rate on this song %f " % (totalAccuracy/N))
+      print ("Without HMM accuracy %f" % (cnnOnlyAccuracy/N))
 #      np.save("good_prob_hmm_refined"+str(threshold), b_prob)
       # np.save("good_bin_hmm", b_bin)
  #     np.save("bad_prob_hmm_refined"+str(threshold), w_prob)

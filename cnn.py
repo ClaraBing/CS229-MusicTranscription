@@ -166,7 +166,7 @@ def validate(data_loader, model, criterion, outfile=None):
 
         batch_time.update(time() - batch_start)
         
-        if batch_idx % args.log_interval == 0:
+        if batch_idx % (10*args.log_interval) == 0:
             print('Val({:d}): '
                   'Loss: {:f} (avg: {:f})\t'
                   'Prec@1: {:f} (avg: {:f})\t'

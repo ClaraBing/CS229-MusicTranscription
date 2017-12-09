@@ -67,8 +67,7 @@ for songID in range(len(val_set.songNames)):
         solution = pitch_contour.solve()
         for v, pitch in solution.items():
           total_solution.append(pitch)
-    outputMIDI(len(total_solution), total_solution, songName+"_inference", duration_sec=0.05)
-    np.save(songName, np.array(total_solution))
-    outputMIDI(len(val_set.pitches[songID]), val_set.pitches[songID], songName+"_original", duration_sec=0.05)
+    outputMIDI(len(total_solution), total_solution, songName+"_inference", duration_sec=0.058, tempo=120)
+    outputMIDI(len(val_set.pitches[songID]), val_set.pitches[songID], songName+"_original", duration_sec=0.058, tempo=120)
     print ("Saved midi files for song " + songName)
     sys.stdout.flush()

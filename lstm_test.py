@@ -73,7 +73,7 @@ def train(model, train_loader, criterion, num_epoch):
                 sys.stdout.flush()
             if idx % 200 == 0:
            #     print("The accuracy is :", eval_accuracy(output, target,idx))
-                torch.save(model, 'lstm_epoch{:d}.pt'.format(idx))
+                torch.save(model, 'lstm_model/lstm_epoch{:d}.pt'.format(idx))
 
 # See what the scores are after training
 # inputs = prepare_sequence(training_data[0][0], word_to_ix)

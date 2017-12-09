@@ -3,6 +3,7 @@ from util import *
 from model import Net
 from pitch_contour import *
 from scipy import ndimage
+from fragmenter_hmm_solver import fragmented_solver
 # torch related
 import torch
 import torch.nn as nn
@@ -12,13 +13,13 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 
 directory = "/root/MedleyDB_selected/Audios/" # Directory containing audio file for inference
-filename = "MusicDelta_80sRock" # Name of audio file for inference
+filename = "AvaLuna_Waterduct" # Name of audio file for inference
 extension = "wav" # Extension of audio file
 imageOutputDirectory = "/root/inference/"+filename+"/" # Directory containing spectogram images
-cnn_weights = "output_model/conv5_13/model_conv5_train_epoch9.pt" # Path to saved weights of CNN
-trained_mle = "transitions_mle.npy" # Path to saves parameters for HMM
-saved_probabilities = "probabilities_"+filename
-saved_bins = "bins_"+filename
+cnn_weights = "output_model_old/conv5_13/model_conv5_train_epoch9.pt" # Path to saved weights of CNN
+trained_mle = "dataset/transitions_mle.npy" # Path to saves parameters for HMM
+saved_probabilities = imageOutputDirectory+"/probabilities_"+filename
+saved_bins = imageOutputDirectory+"/bins_"+filename
 
 # Convert audio file to spectogram slices
 print ("Converting the audio to spectogram images ...")
@@ -40,13 +41,13 @@ bins = np.zeros((N,K))
 probabilities = np.zeros((N,K))
 
 # Naively perform inference on each of the timeframes and save results
-cnn_inf = False
+cnn_inf = True
 if cnn_inf:
   print ("Pitch estimation on each frame .")
   for i in range(N):
       print(("%d out of %d") % (i, N-1))
       path = '{:s}spec_{:s}_{:d}.png'.format(imageOutputDirectory, filename+"_MIX", i)
-      print (path)
+      # print (path)
       image = torch.from_numpy(np.transpose(ndimage.imread(path, mode='RGB'), (2,0,1)))
       data = Variable(image).type(torch.FloatTensor)
       data = data.unsqueeze(0)
@@ -70,17 +71,11 @@ print (bins[1000:1010])
 # Initialize Pitch Contour
 print ("Pitch tracking...")
 transitions = np.load(trained_mle).item()
-pitch_contour = PitchContour()
-pitch_contour.setTransitionProbability(lambda b1, b2 : transitions[(b1, b2)])
-pitch_contour.setNotes(N, K, probabilities, bins)
-solution = pitch_contour.solve()
+solution = fragmented_solver(N, K, 300, probabilities, bins, transitions, threshold=0.6)
 print ("Done.")
-
-# Evaluate
-# TODO: add evaluation code here
 
 # Output MIDI file
 print ("Save as MIDI file.")
-frequencies = [getFrequencyFromBin(solution[i]) for i in range(N)]
-outputMIDI(N, frequencies, filename+'_result',  duration = 0.3)
+bins = [solution[i] for i in range(N)]
+outputMIDI(N, bins, filename+'_result',  duration = 0.058)
 print ("Done. The file was saved at midiOutput/"+filename+"_result.mid")
