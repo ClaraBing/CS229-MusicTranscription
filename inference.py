@@ -36,7 +36,7 @@ trained_cnn.load_state_dict(weights['state_dict'])
 print("Done.")
 
 K = 5
-N = len(os.listdir(imageOutputDirectory)) # Number of pitches
+N = len(os.listdir(imageOutputDirectory))-2 # Number of pitches
 bins = np.zeros((N,K))
 probabilities = np.zeros((N,K))
 
@@ -77,5 +77,5 @@ print ("Done.")
 # Output MIDI file
 print ("Save as MIDI file.")
 bins = [solution[i] for i in range(N)]
-outputMIDI(N, bins, filename+'_result',  duration = 0.058)
+outputMIDI(N, bins, filename+'_result',  duration_sec = 0.058)
 print ("Done. The file was saved at midiOutput/"+filename+"_result.mid")

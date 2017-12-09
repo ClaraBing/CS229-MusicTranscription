@@ -12,7 +12,7 @@ from collections import Counter
 class PitchEstimationDataSet(Dataset):
     """Pitch Estimation dataset."""
 
-    def __init__(self, annotations_dir, images_dir, sr=6, transform=None):
+    def __init__(self, annotations_dir, images_dir, sr_ratio=6, transform=None):
         """
         Args:
             annotations_dir (string): Path to the annotation folder that contains
@@ -31,13 +31,13 @@ class PitchEstimationDataSet(Dataset):
         self.rawNames = []
         self.songLengths = [] # Length of a song
         self.currentCount = 0
-        self.sr = sr
+        self.sr_ratio = sr_ratio
         for filename in os.listdir(annotations_dir):
             if filename.endswith(".csv"):
                 # The ordering/lengths of songs can be determined following the code below:
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
-                new_bin_melody, _ = read_melody_avg(audioName, annotations_dir, self.sr) # len(new_bin_melody) denotes the length of a song
+                new_bin_melody, _ = read_melody_avg(audioName, annotations_dir, sr_ratio=self.sr_ratio) # len(new_bin_melody) denotes the length of a song
                 new_bin_melody = new_bin_melody[:-1] # remove the last entry to avoid errors at boundaries (dirty but fast @v@)
                 self.lengths.append(len(new_bin_melody)+ self.currentCount)
                 self.songLengths.append(len(new_bin_melody))
@@ -51,7 +51,7 @@ class PitchEstimationDataSet(Dataset):
         # print (self.currentCount)
         return self.currentCount
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx, aug_noise=False, aug_vol=False):
         # Find which song the annotated time frame belongs to:
         if len(self.lengths) == 1:
           songId = 0

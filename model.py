@@ -56,7 +56,17 @@ class Net(nn.Module):
         x = F.dropout(x, p=0.6, training=self.training)
         x = self.fc2(x)
         return F.log_softmax(x)
-
+    
+    def get_features(self, x):
+        # print('in forward:')
+        x = F.relu(F.max_pool2d(self.conv1_bn(self.conv1(x)), 2))
+        # print(x.data.shape)
+        x = F.relu(F.max_pool2d(self.conv2_bn(self.conv2(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv3_bn(self.conv3(x)), 2))
+        x = F.relu(self.conv4_bn(self.conv4(x)))
+        x = F.relu(F.max_pool2d(self.conv5_bn(self.conv5(x)), 2))
+        # print(x.data.shape)
+        return x.view(-1, 8192)
 
     def print_archi(self):
         print('Conv1: 3  --> 64, kernal=7*7')
