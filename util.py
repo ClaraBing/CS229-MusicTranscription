@@ -280,15 +280,14 @@ def data_gen_wrapper():
       for path in raw_list:
         outDir = outDir_base + mode + '/'
         path = path.strip()
-        # e.g. path = '.../Audios/AmarLal_SpringDay1/AmarLal_SpringDay1_RAW/AmarLal_SpingDay1_RAW_01_13.wav'
         # e.g. path = '.../new_data/train/Phoenix_SeanCaughlinsTheScartaglen_RAW_03_01.wav'
         data_dir = path[:path.find('train/')+6]
         audioName = path[path.find('train/')+6:-4] # keep prev path + '.wav'
         fext = 'wav'
         curr_outDir = outDir + audioName[:-10] + '/'
+        print(curr_outDir)
         os.mkdir(curr_outDir)
         wav2spec_data(data_dir, audioName, fext, curr_outDir)
-        print(audioName)
 
 def wav2spec_data(data_dir, audioName, fext, outDir):
 # Generate time slices of spectrogram, which will be used for CNN training
