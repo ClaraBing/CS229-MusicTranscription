@@ -13,7 +13,7 @@ import sys
 class PitchEstimationDataSet(Dataset):
     """Pitch Estimation dataset."""
 
-    def __init__(self, annotations_dir, images_dir, sr_ratio=6, audio_type='RAW', multiple=False, transform=None):
+    def __init__(self, annotations_dir, images_dir, sr_ratio=6, audio_type='RAW', multiple=False, early_fusion=False, transform=None):
         """
         Args:
             annotations_dir (string): Path to the annotation folder that contains
@@ -25,6 +25,7 @@ class PitchEstimationDataSet(Dataset):
         self.images_dir = images_dir
         self.audio_type = audio_type
         self.multiple = multiple
+        self.early_fusion = early_fusion
         self.transform = transform
         # Load all CSVs and count number of frames in the total dataset
         self.pitches = []
@@ -75,7 +76,8 @@ class PitchEstimationDataSet(Dataset):
         #     prev_len = songLen
         print('Class count from PitchEstimationDataSet (total={:d} / invalid={:d}):'.format(sum([len(pitches) for pitches in self.pitches]), invalid_path_cnt))
         if self.multiple:
-            print(Counter([i for pitches in self.pitches for p in pitches for i in range(109) if p[i]==1]))
+            print()
+            # print(Counter([i for pitches in self.pitches for p in pitches for i in range(109) if p[i]==1]))
         else:
             print(Counter([p for pitches in self.pitches for p in pitches]))
 
@@ -98,6 +100,10 @@ class PitchEstimationDataSet(Dataset):
         img_name = os.path.join(self.images_dir, songName + "/spec_"+ songName+"_{:s}_".format(self.audio_type)+str(pitchId)+".png") # NOTE: was '_MIX_' rather than '_RAW_'
         # np.transpose: change from H*W*C to C*H*W
         image = np.transpose(ndimage.imread(img_name, mode='RGB'), (2,0,1))
+        if self.early_fusion:
+            cqt_img_name = img_name.replace('image', 'cqt_image')
+            cqt_image = np.transpose(ndimage.imread(cqt_img_name, mode='RGB'), (2,0,1))
+            image = np.concatenate((image, cqt_image), axis=0)
         frequency = torch.Tensor(self.pitches[songId][pitchId]) if self.multiple else self.pitches[songId][pitchId]
         sample = {'image': image, 'frequency': frequency}# , 'song':songName, 'image_path':img_name, 'idx':idx}
         # TODO: augmentation: noise & volume
