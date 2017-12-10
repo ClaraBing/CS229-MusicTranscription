@@ -4,6 +4,7 @@ Automatic melody transcription for multitrack (monophonic) audios. An input audi
 # To-Do
 * Unbalanced class: add weight to loss function
 * Multiclass / polyphonic
+  * running on conv5 (experiment with the smaller model since the performance gain from conv7 is small)
 * Data augmentation
   * changing volume: not applicable
   * adding noise
