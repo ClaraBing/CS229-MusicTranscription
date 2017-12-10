@@ -1,13 +1,13 @@
 import torch
 import shutil
 
-def print_config(args):
+def print_config(args, cfg):
     print('Using ' + ('GPU' if args.cuda else 'CPU'))
     print('batch size: {:d}'.format(args.batch_size))
     print('epochs: {:d}'.format(args.epochs))
     print('lr: {:f} (interval={:d})'.format(args.lr, args.lr_interval))
     print('momentum: {:f}'.format(args.momentum))
-    print('save: dir: {:s} / prefix: {:s}'.format(args.save_dir, args.save_prefix))
+    print('save: dir: {:s} / prefix: {:s}'.format(cfg['save_dir'], cfg['save_prefix']))
 
 # Ref: https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
