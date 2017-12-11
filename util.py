@@ -9,7 +9,7 @@ import numpy as np
 import os, math
 from collections import Counter
 
-global_sr_ratio = 6
+global_sr_ratio = 1
 
 # Function list:
 
@@ -89,9 +89,9 @@ def getFrequencyFromBin(bin, base = 440.0):
     else:
         return base * math.pow(2.0, (bin - 58) / 12.0)
 
-def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=global_sr_ratio):
+def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=2*global_sr_ratio, multiple=False):
 
-    csv_file = dir+folder_name+"_MELODY1.csv"
+    csv_file = dir+folder_name + ("_MELODY3.csv" if multiple else '_MELODY1.csv')
     pitch_bin_list = []
     pitch_freq_list = []
     with open(csv_file) as f:
@@ -115,9 +115,9 @@ def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annota
     return pitch_bin_list, pitch_freq_list
 
 # average notes over 15ms
-def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/", sr_ratio=global_sr_ratio):
+def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/new_data/", sr_ratio=2*global_sr_ratio, multiple=False):
 
-    csv_file = dir+folder_name+"_MELODY1.csv"
+    csv_file = dir+folder_name + ("_MELODY3.csv" if multiple else '_MELODY1.csv')
     pitch_bin_list = []
     pitch_freq_list = []
     with open(csv_file) as f:
@@ -150,18 +150,18 @@ def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_An
     return pitch_bin_list, pitch_freq_list
 
 # read melodies in vector form for LSTM
-def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=global_sr_ratio):
+def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=2*global_sr_ratio, multiple=False):
 
-    csv_file = dir+folder_name+"_MELODY1.csv"
+    csv_file = dir+folder_name + ("_MELODY3.csv" if multiple else '_MELODY1.csv')
     pitch_bin_list = []
     pitch_freq_list = []
     with open(csv_file) as f:
         reader = csv.DictReader(f)
         count = 0
         for row in reader:
-            # sr_ratio: ratio between the sampling rate (sr) of the annotation and the sr of the spectrogram.
-            # Currently the ratio is 2, i.e. a spectrogram corresponds to every other line in the annotation.
-            if count % sr_ratio:
+            # sr_ratio: ratio between annotation and actual spectrogram (i.e. number of lines to skip in the annotations)
+            # why -int(sr_ratio/2): take the annotation from the middle frame
+            if (count-int(sr_ratio/2)) % sr_ratio:
                 count+=1
                 continue
             # print(row)
@@ -275,16 +275,25 @@ def smooth(x,window_len=11,window='hanning'):
 def data_gen_wrapper():
     # raw_list = open('/root/new_data/raw_list.txt', 'r').readlines()
     # outDir = '/root/new_data/orig/'
-    outDir_base = '/root/new_data/context46/'
-    for mode in ['train', 'val', 'text']:
-      for path in raw_list:
-        outDir = outDir_base + mode + '/'
-        path = path.strip()
-        # e.g. path = '.../new_data/train/Phoenix_SeanCaughlinsTheScartaglen_RAW_03_01.wav'
-        data_dir = path[:path.find('train/')+6]
-        audioName = path[path.find('train/')+6:-4] # keep prev path + '.wav'
+    outDir_base = '/root/new_data/context6/image/'
+    for mode in ['train', 'val', 'test']:
+      outDir = outDir_base + mode + '/'
+      for line in open('/root/new_data/context6/'+mode+'.txt', 'r').readlines():
+        # TODO
+        path = '/root/new_data/context46/audio/' +mode + '/' + line.strip()
+        if 'RAW' in path:
+          # e.g. path = '.../new_data/raw_context46/train/Phoenix_SeanCaughlinsTheScartaglen_RAW_03_01.wav'
+          # need to skip '_03_01' at the end
+          data_dir = path[:path.find(mode+'/')+len(mode)+1]
+          audioName = path[path.find(mode+'/')+len(mode)+1:-4] # keep prev path + '.wav'
+          curr_outDir = outDir + audioName[:-10] + '/'
+        else:
+          # MIX
+          # e.g. path = '.../new_data/mixed_context46/audio/AlexanderRoss_GoodbyeBolero_MIX.wav'
+          data_dir = '/root/new_data/context46/audio/'
+          audioName = line.strip()[:-4]
+          curr_outDir = outDir + audioName[:-4]
         fext = 'wav'
-        curr_outDir = outDir + audioName[:-10] + '/'
         print(curr_outDir)
         os.mkdir(curr_outDir)
         wav2spec_data(data_dir, audioName, fext, curr_outDir)
@@ -297,13 +306,13 @@ def wav2spec_data(data_dir, audioName, fext, outDir):
     S = librosa.feature.melspectrogram(y=y, sr=sr, fmax=8000, n_mels=256)
     spec = librosa.power_to_db(S, ref=np.max)
 
-    for i in range(0, spec.shape[1], 66):
+    for i in range(0, spec.shape[1], global_sr_ratio):
         plt.figure(figsize=(2.56, 2.56)) # 256 * 256 pixels
         plt.subplot(111)
-        librosa.display.specshow(spec[:, i:i+66], sr=sr)
+        librosa.display.specshow(spec[:, i:i+global_sr_ratio], sr=sr)
         plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
         plt.axis('off')
-        plt.savefig('{:s}spec_{:s}_{:d}.png'.format(outDir, audioName, int(i/66)))
+        plt.savefig('{:s}/spec_{:s}_{:d}.png'.format(outDir, audioName, int(i/global_sr_ratio)))
         plt.close()
 
 

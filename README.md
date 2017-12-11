@@ -2,19 +2,15 @@
 Automatic melody transcription for multitrack (monophonic) audios. An input audio (`.wav`) is first segmented to short time intervals and transformed to corresponding spectrograms, on which a CNN is run to estimate the probabilities of a pitch present. Finally, with the estimated pitches as inputs, a Hidden Markov Model produces one or more most probable melodies.
 
 # To-Do
-* Longer context for data (15ms)
-  * more data
+* Unbalanced class: add weight to loss function
+* Multiclass / polyphonic
+  * running on conv5 (experiment with the smaller model since the performance gain from conv7 is small)
 * Data augmentation
-  * changing volume
+  * changing volume: not applicable
   * adding noise
 * More features
   * Q-transformation
   * max spacing to help determine foundamental frequency
-* LSTM for part 2 (Bingbin's not-working-well version)
-  * `lstm.py`: main file / entry point. Command: `python lstm.py >your_log_file`
-  * `model_lstm.py`: specifies the network structure. Currently using 2 hidden layers w/ 1024 nodes each.
-  * `LSTMDataset.py`: loads the data s.t. data/target from `__getitem__()` are of size `batch_size * seq_len`. Currently the sequence length is 1000.
-  * **Note**: curently the training loss is not decreasing. **Possible reasons** include: buggy implementation; suboptimal hyperparameters; inappropriate sequence length for LSTM.
 
 # Dependencies 
 The project depends on the following packages 
@@ -28,6 +24,7 @@ The project depends on the following packages
 ## Part 0 - Data Pre-processing
 Generating spectrograms from input audios (`dataset2spec.py`).
 Note that the sampling rate of the spectrograms is half the rate of the annotations; i.e. we should skip every other line in the annotations (e.g. refer to `util.py/read_melody` where we keep track of `count % sr_ratio`)
+* Data under subdirectories of `/root/new_data/`. In each subdirectory, `annot/` for annotations, `audios/` for `wav` files, and `image` for spectrogram slices grouped by songs.
 
 ## Part 1 (CS229) - CNN for pitch estimation
 
@@ -100,3 +97,17 @@ This will run the entire inference process on a given song by computing the spec
 * **HMM-based multipitch tracking for noisy and reverberant speech** by Jin, Zhaozhang and Wang, DeLiang, IEEE 2011.
 * **Computer-aided Melody Note Transcription Using the Tony Software: Accuracy and Efficiency** by M. Mauch and C. Cannam and R. Bittner and G. Fazekas and J. Salamon and J. Dai and J. Bello and S. Dixon, 2015.
 * **Evaluation of pitch estimation in noisy speech for application in non-intrusive speech quality assessment** by D. Sharma and P. A. Naylor, 2009.
+
+
+## Log for finished to-dos
+* Longer context for data (46ms)
+  * more data: 34 -> 60 songs
+* Deeper network
+  * 7 conv layers + same FCs: ~2x model size (3574 vs 7561); slightly better results.
+* LSTM for part 2
+  * `lstm.py`: main file / entry point. Command: `python lstm.py >your_log_file`
+  * `model_lstm.py`: specifies the network structure. Currently using 2 hidden layers w/ 1024 nodes each.
+  * `LSTMDataset.py`: loads the data s.t. data/target from `__getitem__()` are of size `batch_size * seq_len`. Currently the sequence length is 1000.
+  * **Note**: curently the training loss is not decreasing. **Possible reasons** include: buggy implementation; suboptimal hyperparameters; inappropriate sequence length for LSTM.
+
+

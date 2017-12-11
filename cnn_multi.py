@@ -15,8 +15,7 @@ from torch.utils.data import DataLoader
 from collections import Counter
 # our code
 from PitchEstimationDataSet import *
-from model import *
-from model_conv7 import *
+from model_multi import *
 from train_util import *
 from config import *
 
@@ -88,8 +87,6 @@ val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
 #test_loader = DataLoader(test_set, shuffle=False, # do not shuffle: the original ordering is needed for matching w/ annotations (for HMM)
 #    batch_size = args.test_batch_size, **kwargs) # batch = 1
 
-# raise ValueError('should stop here')
-
 
 def train(model, train_loader, criterion, epoch):
     model.train()
@@ -98,20 +95,13 @@ def train(model, train_loader, criterion, epoch):
     for batch_idx, dictionary in enumerate(train_loader):
         data = dictionary['image']
         target = dictionary['frequency']
-        data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.FloatTensor) # NOTE: may need to change target back to LongTensor for single notes
+        data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.FloatTensor)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        # print('data & target:')
-        # print(data.data.shape)
-        # print(target.data.shape)
+
         optimizer.zero_grad()
         output = model(data)
-        # print('output:')
-        # print(output.data.shape)
-        # print(output.data.max())
-        # print(output.data.min())
-        loss = criterion(output, target) # F.nll_loss(output, target)
-        # avg_loss += loss
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()
 
@@ -133,7 +123,7 @@ def train(model, train_loader, criterion, epoch):
 
 
 def validate(data_loader, model, criterion, outfile=None):
-    out_mtrx = np.empty((len(data_loader), 109, 2))
+    out_mtrx = np.empty((len(data_loader), 108, 2))
 
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -144,7 +134,7 @@ def validate(data_loader, model, criterion, outfile=None):
     for batch_idx, dictionary in enumerate(data_loader):
         batch_start = time()
 
-        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.FloatTensor) # NOTE: may need to change back to LongTensor for single note
+        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.FloatTensor)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
 
@@ -153,25 +143,17 @@ def validate(data_loader, model, criterion, outfile=None):
         # performance measure: loss & top 1/5 accuracy
         loss = criterion(output, target)
         losses.update(loss.data[0], data.size(0))
-        prec1, prec5 = accuracy(output.data, target.data, topk=(1,5))
-        top1.update(prec1[0], data.size(0))
-        top5.update(prec5[0], data.size(0))
         # Save probabilities & corresponding pitch bins
         probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
-        out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
+        out_mtrx[batch_idx, :, 0] = probs.view(-1).cpu().numpy()
         out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
-            # prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
-            # for prob, pitch_bin in zip(prob_list, pitch_bin_list):
-                
 
 
         batch_time.update(time() - batch_start)
         
-        if batch_idx % (10*args.log_interval) == 0:
+        if batch_idx % (10*args.log_interval) == 0 and False:
             print('Val({:d}): '
                   'Loss: {:f} (avg: {:f})\t'
-                  'Prec@1: {:f} (avg: {:f})\t'
-                  'Prec@5: {:f} (avg: {:f})\t'
                   'Time: {:f}'.format(
                   batch_idx, losses.val, losses.avg, top1.val, top1.avg, top5.val, top5.avg, batch_time.avg))
             sys.stdout.flush()
@@ -220,35 +202,8 @@ def visualise_features(data_loader, model, criterion, outfile_features=None, out
           np.save(outfile_annotations, np.array(annotations))
 
 
-# TODO: check if validate() & test() calculate the same error;
-# If yes, merge the two functions
-def test(model, test_loader):
-    model.eval()
-    test_loss = 0
-    correct = 0
-    for data, target in test_loader:
-        data, target = Variable(data, volatile=True).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
-        pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
-        correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-
-    test_loss /= len(test_loader.dataset)
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
-
-
-
 if __name__ == '__main__':
-    if cfg['net'] == 'conv5':
-        model = Net()
-    elif cfg['net'] == 'conv7':
-        model = Net_Conv7()
-    else:
-        raise ValueError('Unrecognized network structure: ', cfg['net'])
+    model = Net_Multi()
     if args.cuda:
         model.cuda()
     print_config(args, cfg)
@@ -257,12 +212,9 @@ if __name__ == '__main__':
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     lr_update_interval = [5, 10, 40, 50]
 
-    if cfg['multiple']:
-        # input / target are vectors
-        criterion = torch.nn.MultiLabelSoftMarginLoss()
-    else:
-        # input / target are floats
-        criterion = F.nll_loss
+    # input / target are vectors
+    # use weight to help make up for unbalanced classes
+    criterion = torch.nn.MultiLabelSoftMarginLoss()
     best_prec = 0
     if args.mode == 'train':
         if cfg['use_pretrained']:
@@ -279,7 +231,7 @@ if __name__ == '__main__':
             train(model, train_loader, criterion, epoch)
     
             # validation
-            prec = validate(val_loader, model, criterion)
+            prec = validate(val_loader, model, criterion, 'val_result_epoch{:d}.npy'.format(epoch))
             is_best = prec > best_prec
             best_prec = max(prec, best_prec)
             save_checkpoint({
@@ -315,5 +267,4 @@ if __name__ == '__main__':
         model.cuda()
         # Get features
         visualise_features(train_loader, model, criterion, outfile_features='train_features_mtrx.npy', outfile_annotations='train_features_annotations.npy')
-        # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
         #validate(train_loader, model, criterion, outfile='train_result_mtrx.npy')
