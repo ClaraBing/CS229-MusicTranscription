@@ -49,7 +49,9 @@ The saved result matrix is of size `N*109*2` and dimension 3, since there's no t
 
 e.g. mtrx\[0\]\[:\]\[0\] stores in descending order the probabilities for each of the 109 pitch bins at the first timestep of the first song, where the corresponding bin values (between 0-108, 0 being empty pitch) are stored in mtrx\[0\]\[:\]\[1\].
 
-
+### Error Analysis 
+* Confusion matrix: `python confusion_matrix.py` generates the confusion matrix on the validation data set and saves it to `cnf_matrix.npy`. 
+* Features visualisation: `python features_visualisation.py` performs PCA  and t-SNE on the 8192-dimension feature vector output from the CNN before the fully connected layers in order to embed the vectors in 2D space for visualisation. 
 
 ## Part 2 (CS221) - HMM for melody tracking
 
@@ -73,7 +75,15 @@ Evaluation can be launched using
 ```
 python eval_hmm.py
 ``` 
-By default this launches the evaluation for an HMM built using the learned transition probabilities and the multinomial model on each hidden variable and outputs the total accuracy on the validation set.
+By default this launches the evaluation for an HMM built using the learned transition probabilities and the multinomial model on each hidden variable and outputs the total accuracy on the validation set. This also separates the initial input of the HMM in two different matrices depending on whether the proposed value matches the ground truth and saves them so that they can be reused for error analysis.
+
+
+### Error Analysis 
+In order to understand in which cases the HMM seem to be improving the results given from the CNN, we analyse the influence of the top-1 and top-2 probabilities given by the CNN's softmax layer as well as the influence of the proposed bin values on the classification result. 
+To see the repartition of top-1 probabilities depending on positive / negative results:  
+``` 
+python error_analysis_hmm.py
+``` 
 
 ## Part 3 - Inference
 To test the entire pipeline, 
@@ -82,11 +92,22 @@ python inference.py
 ```
 This will run the entire inference process on a given song by computing the spectogram images, saving them in a directory, then performing pitch estimation on each time frame using the pre-trained CNN and finally perform pitch-tracking. The result will then be converted into a MIDI file. 
 
+Generating MIDI files 
+MIDI files for the results on the dataset can be generated using 
+```
+python generate_midi_files.py
+```
+This will generate MIDI files from the dataset annotations and the inference result of the models and save them. The results can then be visualised and compared using a software like Musescore. 
+The script needs to be given the following in order to work 
+- location of the original annotations.
+- location of the result matrix giving the softmax output of the CNN on each of the songs that needs to be visualised. This needs to be in the same format specified in the CNN section (Testing output)
+- location of the `.npy` file containing the trained Maximum Likelihood transition estimates 
+
 # Documentation
 * [Milestone](https://www.overleaf.com/12132890syqfthdckmgj#/46086031/)
 * Final Report (to be released)
   * [Google spreadsheet](https://docs.google.com/spreadsheets/d/1KYRvSyM2JVV2ZiFddUcCX4tu9Kxq0nLXLjpy8P8qIZE/edit#gid=0) for HMM results
-* Poster (to be released)
+* [CS221 Poster](https://drive.google.com/open?id=1_yV6NLu-qXVhDv-ff0-_BnmhvfIXAT-s)
 
 # References
 * **MedleyDB: A Multitrack Dataset for Annotation-Intensive MIR Research** by Bittner, Rachel M and Salamon, Justin and Tierney, Mike and Mauch, Matthias and Cannam, Chris and Bello, Juan Pablo, 2014
