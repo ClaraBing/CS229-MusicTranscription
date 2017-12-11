@@ -1,9 +1,9 @@
 import numpy as np
-
+from numpy import linalg as LA
 # Sciki-learn
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-
+from sklearn.preprocessing import StandardScaler
 # Visualisation
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -11,35 +11,44 @@ from mpl_toolkits.mplot3d import Axes3D
 # Parameters
 features_file = 'train_features_mtrx.npy'
 annotations_file = 'train_features_annotations.npy'
-M = 50 # Intermediate dimension of the data
-
+thres = 0.95
+M = 50
 # Load data
 features = np.load(features_file)
 annotations = np.load(annotations_file)
 N = len(features_file)
-print (N)
-print (features.shape[1])
+# Standardize features
+scaler = StandardScaler()
+scaler.fit(features)
+print(scaler.mean_.shape)
+std_features = scaler.transform(features)
 
 # Apply PCA to each of the features
 pca = PCA(n_components=M)
-pca.fit(features)
-transformed_features = pca.transform(features)
+pca.fit(std_features)
+transformed_features = pca.transform(std_features)
 print (transformed_features.shape)
 
-
 # Apply t-SNE to the transformed features for visualisation
-embedded_features = TSNE(n_components=3).fit_transform(transformed_features)
+embedded_features = TSNE(n_components=2).fit_transform(transformed_features)
 print (embedded_features.shape)
 
 # Visualise data
 
 fig = plt.figure(1, figsize=(4, 3))
 plt.clf()
-ax = plt.subplot(111, projection='3d')
+L = len(set(annotations))
+selected_bins = [0]
+selected_bins.extend(range(39, 47))
+selected_bins.extend(range(58, 69))
+selected_bins.extend(range(75, 80))
 
-for i in range(109):
-    if i in annotations:
-        batch = embedded_features[annotations==i]
-        ax.plot(batch[:,0], batch[:,1], batch[:,2], 'o', label=str(i))
-plt.legend(loc='upper left', numpoints=1, ncol=3, fontsize=8, bbox_to_anchor=(0, 0))
+# Generate L random colors
+colors = [(np.random.randint(0,255)/255, np.random.randint(0,255)/255, np.random.randint(0,255)/255) for i in range(len(selected_bins))]
+for idx, i in enumerate(selected_bins):
+    batch = embedded_features[annotations==i]
+    if len(batch) < 10:
+        continue
+    plt.scatter(batch[:,0], batch[:,1], label=str(i), c=colors[idx])
+plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=12)
 plt.show()
