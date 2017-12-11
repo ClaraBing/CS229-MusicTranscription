@@ -26,6 +26,10 @@ Generating spectrograms from input audios (`dataset2spec.py`).
 Note that the sampling rate of the spectrograms is half the rate of the annotations; i.e. we should skip every other line in the annotations (e.g. refer to `util.py/read_melody` where we keep track of `count % sr_ratio`)
 * Data under subdirectories of `/root/new_data/`. In each subdirectory, `annot/` for annotations, `audios/` for `wav` files, and `image` for spectrogram slices grouped by songs.
 
+
+![spec_whole_song](https://user-images.githubusercontent.com/13089230/33816412-8d4730f0-dded-11e7-9a76-ad394671f6d8.jpg)
+Example of spectrogram generated from an audio file 
+
 ## Part 1 (CS229) - CNN for pitch estimation
 
 ### Training
@@ -51,7 +55,14 @@ e.g. mtrx\[0\]\[:\]\[0\] stores in descending order the probabilities for each o
 
 ### Error Analysis 
 * Confusion matrix: `python confusion_matrix.py` generates the confusion matrix on the validation data set and saves it to `cnf_matrix.npy`. 
+
+![68567649](https://user-images.githubusercontent.com/13089230/33816426-ab8f8ce2-dded-11e7-86ea-b4c9ea41d79b.png)
+Sample confusion matrix on the validation set 
+
 * Features visualisation: `python features_visualisation.py` performs PCA  and t-SNE on the 8192-dimension feature vector output from the CNN before the fully connected layers in order to embed the vectors in 2D space for visualisation. 
+
+![features2d-3](https://user-images.githubusercontent.com/13089230/33816396-68f746cc-dded-11e7-8d80-c6757b166e85.png)
+Visualisation of some features categorized by bins
 
 ## Part 2 (CS221) - HMM for melody tracking
 
@@ -85,6 +96,9 @@ To see the repartition of top-1 probabilities depending on positive / negative r
 python error_analysis_hmm.py
 ``` 
 
+![first-probabilities-refined-step50](https://user-images.githubusercontent.com/13089230/33816410-8824f076-dded-11e7-80f2-cd0976378c13.png)
+Histogram of the repartition for the top-1 probabilities provided by the CNN. The repartition between bad and positive results is mostly similar until a probability threshold after which they diverge. 
+
 ## Part 3 - Inference
 To test the entire pipeline, 
 ``` 
@@ -97,11 +111,20 @@ MIDI files for the results on the dataset can be generated using
 ```
 python generate_midi_files.py
 ```
-This will generate MIDI files from the dataset annotations and the inference result of the models and save them. The results can then be visualised and compared using a software like Musescore. 
+This will generate MIDI files from the dataset annotations and the inference result of the models and save them. The results can then be visualised and compared using a software like Musescore. Note that since the tempo was not given from the dataset, it is arbitrarily defined and we rely solely on the timestamps given by the annotations to model the duration of a note. 
 The script needs to be given the following in order to work 
 - location of the original annotations.
 - location of the result matrix giving the softmax output of the CNN on each of the songs that needs to be visualised. This needs to be in the same format specified in the CNN section (Testing output)
 - location of the `.npy` file containing the trained Maximum Likelihood transition estimates 
+
+
+![schumann_mignon_original](https://user-images.githubusercontent.com/13089230/33816438-be90b46a-dded-11e7-8f9d-c0f2ce635328.png)
+
+MIDI file generated from annotations (Schumann Mignon)
+
+![schumann_mignon_inference_065](https://user-images.githubusercontent.com/13089230/33816437-be7992e4-dded-11e7-9790-82f5200999e0.png)
+
+MIDI file generated from our inference pipeline for the same audio input 
 
 # Documentation
 * [Milestone](https://www.overleaf.com/12132890syqfthdckmgj#/46086031/)
