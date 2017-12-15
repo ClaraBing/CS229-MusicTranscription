@@ -1,5 +1,18 @@
 # NOTE: **ALWAYS** add a trailing '/' at the end of a folder path
 
+
+def config_base():
+  # for base model
+  return {
+    'net': None,
+    'annot_folder': '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/',
+    'image_folder': '/root/data/val/',
+    'sr_ratio': 1,
+    'audio_type': 'MIX',
+    'multiple': False,
+    'saved_weights': 'dataset/val_result_mtrx.npy',
+  }
+
 def config_mixed():
   # for outputing multiple notes
   return {
@@ -49,7 +62,7 @@ def config_context6():
     'save_prefix': 'model_conv5_context6_train',
     'use_pretrained': False, # whether or not to use a pretrained model
     'pretrained_path': None,
-  }  
+  }
 
 def config_stacking():
   # single output + stacking mel & CQT spectrograms
@@ -114,7 +127,7 @@ def config_mel_test():
     'sr_ratio': 6,
     'audio_type': 'RAW',
     'multiple': False,
-    'save_dir': '/root/', # Shouldn't be used 
+    'save_dir': '/root/', # Shouldn't be used
     'save_prefix': 'model_conv5_mel_train',
     'use_pretrained': True, # whether or not to use a pretrained model
     'pretrained_path': '/root/CS229-MusicTranscription/output_model/context46/model_conv5_cqt_train_epoch7.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
@@ -131,7 +144,7 @@ def config_avg_test():
     'sr_ratio': 6,
     'audio_type': 'RAW',
     'multiple': False,
-    'save_dir': '/root/', # Shouldn't be used 
+    'save_dir': '/root/', # Shouldn't be used
     'save_prefix': 'model_conv5_mel_train',
     'use_pretrained': True, # whether or not to use a pretrained model
     'pretrained_path_mel': '/root/CS229-MusicTranscription/output_model/context46/model_conv5_cqt_train_epoch7.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
@@ -188,4 +201,3 @@ def config_mel_bin():
     'use_pretrained': False, # whether or not to use a pretrained model
     'pretrained_path': '/root/CS229-MusicTranscription/output_model/context46/model_conv5_cqt_train_epoch7.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
   }
-
