@@ -13,6 +13,7 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from collections import Counter
+import math
 # our code
 from PitchEstimationDataSet import *
 from model_bin import *
@@ -75,12 +76,12 @@ cfg = config_mel_bin()
 #   use_pretrained: whether or not to use a pretrained model
 #   pretrained_path: path to the pretrained model
 
-if True:
+if False:
     # train
     training_set = PitchEstimationDataSet(cfg['annot_folder']+'train/', cfg['image_folder']+'train/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
     train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, **kwargs)
 
-if True:
+if False:
     # val
     val_set = PitchEstimationDataSet(cfg['annot_folder']+'val/', cfg['image_folder']+'val/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
     val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
@@ -91,13 +92,12 @@ if False:
     test_loader = DataLoader(test_set, batch_size=1, shuffle=False, **kwargs)
 
 
-def train(model, train_loader, criterion, epoch, isBin=True):
-    model.train()
+def train(model, train_loader, criterion, epoch):
     batch_start = time()
     avg_loss, prev_avg_loss = 0, 1000
     for batch_idx, dictionary in enumerate(train_loader):
         data = dictionary['image']
-        target = dictionary['hasNote'] if isBin else dictionary['frequency']
+        target = dictionary['frequency']
         data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.LongTensor) # NOTE: may need to change target back to LongTensor for single notes
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -132,9 +132,8 @@ def train(model, train_loader, criterion, epoch, isBin=True):
             # TODO: save also the optimizer (right now the lr can be found in the log)
             torch.save(model, cfg['save_dir']+save_name)
 
-def validate(data_loader, model, criterion, isBin=False, outfile=None):
-    if not isBin:
-        out_mtrx = np.empty((len(data_loader), 109, 2))
+def validate(data_loader, model, criterion, outfile=None):
+    out_mtrx = np.empty((len(data_loader), 109, 2))
 
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -145,7 +144,7 @@ def validate(data_loader, model, criterion, isBin=False, outfile=None):
     for batch_idx, dictionary in enumerate(data_loader):
         batch_start = time()
 
-        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['hasNote'] if isBin else dictionary['frequency']).type(torch.LongTensor) # NOTE: may need to change back to LongTensor for single note
+        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor) # NOTE: may need to change back to LongTensor for single note
         if args.cuda:
             data, target = data.cuda(), target.cuda()
 
@@ -159,11 +158,10 @@ def validate(data_loader, model, criterion, isBin=False, outfile=None):
         top5.update(prec5[0], data.size(0))
         # Save probabilities & corresponding pitch bins
         probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
-        if not isBin:
-            out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
-            out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
-            # prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
-            # for prob, pitch_bin in zip(prob_list, pitch_bin_list):
+        out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
+        out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
+        # prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
+        # for prob, pitch_bin in zip(prob_list, pitch_bin_list):
                 
 
 
@@ -184,16 +182,58 @@ def validate(data_loader, model, criterion, isBin=False, outfile=None):
           '\n================\n\n'.format(
           losses.avg, top1.avg, top5.avg))
 
-    if outfile and not isBin:
-        np.save(outfile, out_mtrx)
+    np.save(outfile, out_mtrx)
 
     return top1.avg
+
+# Bingary classifier: has note or not
+def train_bin(model, train_loader, criterion, epoch):
+    model.train()
+    batch_start = time()
+    avg_loss, prev_avg_loss = 0, 1000
+    for batch_idx, dictionary in enumerate(train_loader):
+        data = dictionary['image']
+        target = dictionary['hasNote']
+        data, target = Variable(data).type(torch.FloatTensor), Variable(target).type(torch.LongTensor) # NOTE: may need to change target back to LongTensor for single notes
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+
+        optimizer.zero_grad()
+        output = model(data)
+        loss = criterion(output, target) # F.nll_loss(output, target)
+        # avg_loss += loss
+        loss.backward()
+        optimizer.step()
+
+        # training log
+        if batch_idx % args.log_interval == 0:
+            print('Train Epoch: epoch {} iter {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tTime per batch: {:.6f}s'.format(
+                epoch, batch_idx, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss.data[0],
+                (time()-batch_start)/args.log_interval))
+            batch_start = time()
+            sys.stdout.flush()
+        # update lr
+        if cfg['update_lr_in_epoch'] and batch_idx % args.lr_interval == 0:
+            args.lr /= 10
+            for param_group in optimizer.param_groups:
+                print(param_group['lr'])
+                param_group['lr'] = args.lr
+            print('Update lr to ' + str(args.lr))
+        # save trained model
+        if batch_idx % args.save_interval == 0:
+            save_name = cfg['save_prefix'] + str(batch_idx) + '.pt'
+            print('Saving model: ' + save_name)
+            # torch.save(model.state_dict(), args.save_dir+save_name)
+            # TODO: save also the optimizer (right now the lr can be found in the log)
+            torch.save(model, cfg['save_dir']+save_name)
 
 def validate_bin(data_loader, model, criterion, outfile=None, breakEarly=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
     # true pos, true neg
     tp, tn = AverageMeter(), AverageMeter()
+    prec1 = AverageMeter()
 
     model.eval()
 
@@ -209,9 +249,12 @@ def validate_bin(data_loader, model, criterion, outfile=None, breakEarly=False):
         # performance measure: loss & true positive & true negative
         loss = criterion(output, target)
         losses.update(loss.data[0], data.size(0))
+        prec1.update(accuracy(output.data, target.data, topk=(1,))[0][0], data.size(0))
         true_pos, true_neg = recall(output.data, target.data)
-        tp.update(true_pos[0], data.size(0))
-        tn.update(true_neg[0], data.size(0))
+        if target.data[0] > 0:
+          tp.update(true_pos[0], data.size(0))
+        else:
+          tn.update(true_neg[0], data.size(0))
         # Save probabilities & corresponding pitch bins
         probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
 
@@ -220,24 +263,25 @@ def validate_bin(data_loader, model, criterion, outfile=None, breakEarly=False):
         if batch_idx % (200*args.log_interval) == 0:
             print('Val({:d}): '
                   'Loss: {:f} (avg: {:f})\t'
+                  'Prec@1: {:f} (avg: {:f})\t'
                   'True Pos: {:f} (avg: {:f})\t'
                   'True Neg: {:f} (avg: {:f})\t'
                   'Time: {:f}'.format(
-                  batch_idx, losses.val, losses.avg, tp.val, tp.avg, tn.val, tn.avg, batch_time.avg))
+                  batch_idx, losses.val, losses.avg, prec1.val, prec1.avg, tp.val, tp.avg, tn.val, tn.avg, batch_time.avg))
             sys.stdout.flush()
         if breakEarly:
-            break
+            return data, target
 
     # overall average
     print('\n================\n'
-          'Loss: {:f}\nTrue Pos: {:f}\nTrue Neg: {:f}'
+          'Loss: {:f}\nPrec@1: {:f}\nTrue Pos: {:f}\nTrue Neg: {:f}'
           '\n================\n\n'.format(
-          losses.avg, tp.avg, tn.avg))
+          losses.avg, prec1.avg, tp.avg, tn.avg))
 
     if outfile and not isBin:
         np.save(outfile, out_mtrx)
 
-    return
+    return tp.avg
 
 
 
@@ -273,7 +317,7 @@ def visualise_features(data_loader, model, criterion, outfile_features=None, out
 
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and False:
     if cfg['multiple']:
         raise ValueError('Please use cnn_multi.py for multiple output.')
     elif cfg['net'] == 'conv5_bin':
@@ -290,7 +334,8 @@ if __name__ == '__main__':
 
     # input / target are floats
     criterion = F.nll_loss
-    best_prec = 0
+    best_tp = 0
+    args.mode = 'test'
     if args.mode == 'train':
         if cfg['use_pretrained']:
             pretrained_dict = torch.load(cfg['pretrained_path'])['state_dict']
@@ -300,37 +345,34 @@ if __name__ == '__main__':
           os.mkdir(cfg['save_dir'])
 
         # test validate before training in case it falls apart
-        prec = validate_bin(val_loader, model, criterion, breakEarly=True)
-        for epoch in range(1, args.epochs + 1):
-            print('\n\n###############\n'
-              '    Epoch {:d}'
-              '\n###############'.format(epoch))
-    
-            train(model, train_loader, criterion, epoch)
-    
-            # validation
-            prec = validate_bin(val_loader, model, criterion)
-            is_best = prec > best_prec
-            best_prec = max(prec, best_prec)
+        curr_tp = validate_bin(val_loader, model, criterion, breakEarly=True)
+        for epoch in range(args.epochs + 1):
+            if epoch > 0:
+                # use epoch=0 to check saving checkpoint
+                print('\n\n###############\n'
+                  '    Epoch {:d}'
+                  '\n###############'.format(epoch))
+        
+                train(model, train_loader, criterion, epoch)
+        
+                # validation
+                curr_tp = validate_bin(val_loader, model, criterion)
+            is_best = False if math.isnan(curr_tp) else curr_tp>best_tp
+            best_tp = max(curr_tp, best_tp)
             save_checkpoint({
                 'epoch': epoch,
                 'state_dict': model.state_dict(),
-                'best_prec': best_prec,
+                'best_tp': best_tp,
                 'optimizer': optimizer.state_dict(),
             }, is_best, filename=cfg['save_dir']+cfg['save_prefix']+'_epoch{:d}.pt'.format(epoch))
     
             # update lr
-            if epoch<100:
-                # print('checking for avg loss')
-                # avg_loss = avg_loss / args.lr_interval
-                # if prev_avg_loss - avg_loss < 0.05:
-                if epoch in lr_update_interval:
-                    args.lr /= 10
-                    for param_group in optimizer.param_groups:
-                        print(param_group['lr'])
-                        param_group['lr'] = args.lr
-                    print('Update lr to ' + str(args.lr))
-                # prev_avg_loss, avg_loss = avg_loss, 0
+            if epoch in lr_update_interval:
+                args.lr /= 10
+                for param_group in optimizer.param_groups:
+                    print(param_group['lr'])
+                    param_group['lr'] = args.lr
+                print('Update lr to ' + str(args.lr))
             # update momentum
             if args.update_momentum and args.momentum < 0.9:
                 args.momentum += 0.1
@@ -343,6 +385,7 @@ if __name__ == '__main__':
         pretrained_dict = torch.load(cfg['pretrained_path'])['state_dict']
         model.load_state_dict(pretrained_dict)
         model.cuda()
+        '''
         if args.mode == 'features':
           # Get features
           visualise_features(train_loader, model, criterion, outfile_features='dataset/' + cfg['save_prefix'] + '_features_mtrx.npy', 
@@ -350,3 +393,4 @@ if __name__ == '__main__':
         else:
         # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
           validate(test_loader, model, criterion, outfile='dataset/test_result_mtrx_mel.npy')
+        '''

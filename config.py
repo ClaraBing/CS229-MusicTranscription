@@ -199,5 +199,5 @@ def config_mel_bin():
     'save_dir': 'output_model/context46/conv5_bin/',
     'save_prefix': 'model_conv5_bin_mel_train',
     'use_pretrained': False, # whether or not to use a pretrained model
-    'pretrained_path': '/root/CS229-MusicTranscription/output_model/context46/model_conv5_cqt_train_epoch7.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
+    'pretrained_path': '/root/CS229-MusicTranscription/output_model/context46/conv5_bin/model_conv5_bin_mel_train_epoch10.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
   }
