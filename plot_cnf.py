@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn import svm, datasets
 from sklearn.model_selection import train_test_split
@@ -37,7 +39,7 @@ def plot_confusion_matrix(cm, classes=[],
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    plt.show()
+    plt.savefig('cf_mtrx_cropped.png')
 
 # y_true = [2, 0, 2, 2, 0, 1]
 # y_pred = [0, 0, 2, 2, 0, 2]
@@ -46,4 +48,4 @@ def plot_confusion_matrix(cm, classes=[],
 
 cnf_matrix = np.load('cnf_matrix.npy')
 print(cnf_matrix.shape)
-plot_confusion_matrix(cnf_matrix,normalize = True)
+plot_confusion_matrix(cnf_matrix[20:80, 0:80], normalize = True)

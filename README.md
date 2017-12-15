@@ -9,7 +9,7 @@ Automatic melody transcription for multitrack (monophonic) audios. An input audi
   * changing volume: not applicable
   * adding noise
 * More features
-  * Q-transformation
+  * Q-transformation: 1.7% increase as for the first epoch
   * max spacing to help determine foundamental frequency
 
 # Dependencies 

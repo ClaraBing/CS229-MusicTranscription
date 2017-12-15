@@ -23,36 +23,37 @@ def plot_confusion_matrix(cm, classes=[],
     print(cm)
 
 #    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    ax=plt.gca() #get the current axes
-    PCM=ax.get_children()[2] #get the mappable, the 1st and the 2nd are the x and y axes
-    plt.colorbar(PCM, ax=ax) 
+#    plt.title(title)
+#    ax=plt.gca() #get the current axes
+#    PCM=ax.get_children()[2] #get the mappable, the 1st and the 2nd are the x and y axes
+#    plt.colorbar(PCM, ax=ax) 
     #plt.colorbar()
 #    tick_marks = np.arange(len(classes))
 #    plt.xticks(tick_marks, classes, rotation=45)
 #    plt.yticks(tick_marks, classes)
 
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+#    fmt = '.2f' if normalize else 'd'
+#    thresh = cm.max() / 2.
+#    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+#        plt.text(j, i, format(cm[i, j], fmt),
+#                 horizontalalignment="center",
+#                 color="white" if cm[i, j] > thresh else "black")
 
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.save('cnf.png')
+#    plt.tight_layout()
+#    plt.ylabel('True label')
+#    plt.xlabel('Predicted label')
+#    plt.save('cnf.png')
 
+"""
 test_result = np.load('dataset/test_result_mtrx.npy')
 #print(test_result.shape)
 annotations_test = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/test/'
-test_set = PitchEstimationDataSet(annotations_test, '/root/data/test/')
-
+test_set = PitchEstimationDataSet(annotations_test, '/root/data/test/', sr_ratio = 2)
+"""
 val_result = np.load('dataset/val_result_mtrx.npy')
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
-val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
-#print(val_result.shape)
+val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/', sr_ratio = 2, audio_type='MIX')
+print(val_result.shape)
 
 val_pitches = []
 for i in range(val_result.shape[0]):
@@ -76,8 +77,10 @@ print(val_labels.shape)
 sampled_val_pitches = util.subsample(val_pitches, val_labels)
 print(sampled_val_pitches.shape)
 
-cnf_matrix = confusion_matrix(val_labels, sampled_val_pitches)
-np.save('cnf_matrix.npy',cnf_matrix)
-#plot_confusion_matrix(cnf_matrix, title = 'cnf matrix')
+labels = range(109)
+cnf_matrix = confusion_matrix(val_labels, sampled_val_pitches, labels = labels)
+print(cnf_matrix.shape)
+# np.save('cnf_matrix.npy',cnf_matrix)
+plot_confusion_matrix(cnf_matrix[20:80, 0:80], title = 'cnf matrix')
 
-#plt.save('cnf.png',)
+# plt.save('cnf_try.png',)

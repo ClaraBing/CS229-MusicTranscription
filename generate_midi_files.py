@@ -3,14 +3,17 @@ from pitch_contour import PitchContour
 from PitchEstimationDataSet import PitchEstimationDataSet
 import sys
 from util import outputMIDI
+from config import config_cqt
 debug = False
 K=5
 
-annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
-val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
+
+configuration = config_cqt()
+val_set = PitchEstimationDataSet(configuration['annot_folder']+'val/', configuration['image_folder']+'val/')
 
 # Load CNN results from validation set
-filepath = "dataset/val_result_mtrx.npy"
+# filepath = "dataset/val_result_mtrx.npy"
+filepath = "dataset/val_result_mtrx_cqt.npy"
 validation_inference = np.load(filepath)
 
 # Load trained Maximum Likelihood Estimates
@@ -21,6 +24,7 @@ transitions = np.load(trained_mle).item()
 M = 300
 offset = 0
 threshold = 0.65
+sampling_rate = configuration['sr_ratio']
 for songID in range(len(val_set.songNames)):
     total_solution = []
     songName = val_set.songNames[songID]
@@ -67,7 +71,7 @@ for songID in range(len(val_set.songNames)):
         solution = pitch_contour.solve()
         for v, pitch in solution.items():
           total_solution.append(pitch)
-    outputMIDI(len(total_solution), total_solution, songName+"_inference", duration_sec=0.058, tempo=120)
-    outputMIDI(len(val_set.pitches[songID]), val_set.pitches[songID], songName+"_original", duration_sec=0.058, tempo=120)
+    outputMIDI(len(total_solution), total_solution, songName+"_inference_cqt", duration_sec= sampling_rate * 0.058, tempo=120)
+    outputMIDI(len(val_set.pitches[songID]), val_set.pitches[songID], songName+"_original", duration_sec=sampling_rate * 0.058, tempo=120)
     print ("Saved midi files for song " + songName)
     sys.stdout.flush()

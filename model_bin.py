@@ -13,13 +13,10 @@ from torch.utils.data import DataLoader
 # our code
 # from PitchEstimationDataSet import *
 
-class Net(nn.Module):
+class Net_Bin(nn.Module):
     def __init__(self, fusion_mode='no_fusion'):
-        super(Net, self).__init__()
-        if fusion_mode=='stacking':
-            # conv: 6*256*256   -->  64*256*256
-            self.conv1 = nn.Conv2d(6, 64, kernel_size=7, padding=3)
-        elif fusion_mode=='no_fusion':
+        super(Net_Bin, self).__init__()
+        if fusion_mode=='no_fusion':
             # conv: 3*256*256   -->  64*256*256
             self.conv1 = nn.Conv2d(3, 64, kernel_size=7, padding=3)
         else:
@@ -43,11 +40,32 @@ class Net(nn.Module):
         self.conv5_bn = nn.BatchNorm2d(32)
         # max pool to 32*16*16
         # reshape(flatten) to 8192
-        self.fc1 = nn.Linear(8192, 2048)
-        self.fc1_bn = nn.BatchNorm1d(2048)
-        self.fc2 = nn.Linear(2048, 109)
+        # binary classification
+        self.fc_bin1 = nn.Linear(8192, 1024)
+        self.fc_bin1_bn = nn.BatchNorm1d(1024)
+        self.fc_bin2 = nn.Linear(1024, 2)
+        # 108 classification
+        self.fc_cls1 = nn.Linear(8192, 2048)
+        self.fc_cls1_bn = nn.BatchNorm1d(2048)
+        self.fc_cls2 = nn.Linear(2048, 108)
 
     def forward(self, x):
+        # print('in forward:')
+        x = F.relu(F.max_pool2d(self.conv1_bn(self.conv1(x)), 2))
+        # print(x.data.shape)
+        x = F.relu(F.max_pool2d(self.conv2_bn(self.conv2(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv3_bn(self.conv3(x)), 2))
+        x = F.relu(self.conv4_bn(self.conv4(x)))
+        x = F.relu(F.max_pool2d(self.conv5_bn(self.conv5(x)), 2))
+        # print(x.data.shape)
+        x = x.view(-1, 8192)
+        # print(x.data.shape)
+        x = F.relu(self.fc_bin1_bn(self.fc_bin1(x)))
+        x = F.dropout(x, p=0.6, training=self.training)
+        x = self.fc_bin2(x)
+        return F.log_softmax(x)
+    
+    def forward_cls(self, x):
         # print('in forward:')
         x = F.relu(F.max_pool2d(self.conv1_bn(self.conv1(x)), 2))
         # print(x.data.shape)
@@ -62,7 +80,7 @@ class Net(nn.Module):
         x = F.dropout(x, p=0.6, training=self.training)
         x = self.fc2(x)
         return F.log_softmax(x)
-    
+
     def get_features(self, x):
         # print('in forward:')
         x = F.relu(F.max_pool2d(self.conv1_bn(self.conv1(x)), 2))

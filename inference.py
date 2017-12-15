@@ -13,13 +13,20 @@ from torchvision import datasets, transforms
 from torch.autograd import Variable
 
 directory = "/root/MedleyDB_selected/Audios/" # Directory containing audio file for inference
-filename = "AvaLuna_Waterduct" # Name of audio file for inference
+filename = "MusicDelta_80sRock" # Name of audio file for inference
 extension = "wav" # Extension of audio file
 imageOutputDirectory = "/root/inference/"+filename+"/" # Directory containing spectogram images
 cnn_weights = "output_model_old/conv5_13/model_conv5_train_epoch9.pt" # Path to saved weights of CNN
 trained_mle = "dataset/transitions_mle.npy" # Path to saves parameters for HMM
-saved_probabilities = imageOutputDirectory+"/probabilities_"+filename
-saved_bins = imageOutputDirectory+"/bins_"+filename
+saved_probabilities = "probabilities_"+filename
+saved_bins = "bins_"+filename
+
+hasGroundTruth = True
+annotationsDirectory = "/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/"
+if hasGroundTruth:
+  ground_truth, _ = read_melody(filename, dir=annotationsDirectory)
+  outputMIDI(len(ground_truth), ground_truth, filename+'_result',  duration_sec = 0.058)
+  print ("Saved %d notes" % len(ground_truth))
 
 # Convert audio file to spectogram slices
 print ("Converting the audio to spectogram images ...")
@@ -36,7 +43,7 @@ trained_cnn.load_state_dict(weights['state_dict'])
 print("Done.")
 
 K = 5
-N = len(os.listdir(imageOutputDirectory))-2 # Number of pitches
+N = len(os.listdir(imageOutputDirectory)) # Number of pitches
 bins = np.zeros((N,K))
 probabilities = np.zeros((N,K))
 
@@ -63,13 +70,9 @@ else:
   probabilities = np.load(saved_probabilities+".npy")
   bins = np.load(saved_bins+".npy")
 
-print (probabilities[10:40])
-print (bins[10:40])
-print (probabilities[1000:1010])
-print (bins[1000:1010])
 
 # Initialize Pitch Contour
-print ("Pitch tracking...")
+print ("Pitch tracking on %d notes" % N)
 transitions = np.load(trained_mle).item()
 solution = fragmented_solver(N, K, 300, probabilities, bins, transitions, threshold=0.6)
 print ("Done.")

@@ -1,4 +1,4 @@
-
+c
 import numpy as np
 from pitch_contour import PitchContour
 from PitchEstimationDataSet import PitchEstimationDataSet
@@ -63,11 +63,10 @@ transitions = np.load(trained_mle).item()
 hmmTotalAccuracy = {}
 # rangeM = [20, 50, 100, 200, 300, 500, 1000]
 # for M in [50, 100, 200, 300, 400, 500]:
-#rangeM = [0.5, 0.2, 0.1, 0.01, 0.001]
-rangeM = [300]
+rangeM = [0.5, 0.2, 0.1, 0.01, 0.001]
 # rangeT=[0.60, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7]
 # rangeT = [0.65, 0.8, 0.9, 1.0]
-rangeT = [1]
+rangeT = [0.6]
 ranges = [(m, t) for m in rangeM for t in rangeT]
 for (M, threshold) in ranges:
   start = time()
@@ -106,9 +105,9 @@ for (M, threshold) in ranges:
       print ("HMM v. CNN stats confirm %f, fix %f, break %f" % (totalConfirm/N, totalFix/N, totalBreak/N))
 #      np.save("good_prob_hmm_refined"+str(threshold), b_prob)
       # np.save("good_bin_hmm", b_bin)
-      np.save("confirm_prob_hmm"+str(threshold), confirm_prob)
-      np.save("break_prob_hmm"+str(threshold), break_prob)
-      np.save("fix_prob_hmm"+str(threshold), fix_prob)
+      #np.save("confirm_prob_hmm"+str(threshold), confirm_prob)
+      #np.save("break_prob_hmm"+str(threshold), break_prob)
+      #np.save("fix_prob_hmm"+str(threshold), fix_prob)
       b_prob = np.zeros((1,K))
       w_prob = np.zeros((1,K))
       confirm_prob = np.zeros((1,K))

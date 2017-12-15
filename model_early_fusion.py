@@ -13,21 +13,18 @@ from torch.utils.data import DataLoader
 # our code
 # from PitchEstimationDataSet import *
 
-class Net(nn.Module):
-    def __init__(self, fusion_mode='no_fusion'):
-        super(Net, self).__init__()
-        if fusion_mode=='stacking':
-            # conv: 6*256*256   -->  64*256*256
-            self.conv1 = nn.Conv2d(6, 64, kernel_size=7, padding=3)
-        elif fusion_mode=='no_fusion':
-            # conv: 3*256*256   -->  64*256*256
-            self.conv1 = nn.Conv2d(3, 64, kernel_size=7, padding=3)
-        else:
-            raise ValueError('{:s} is not supported by Net().'.format(fusion_mode))
-        self.conv1_bn = nn.BatchNorm2d(64)
+class Net_EarlyFusion(nn.Module):
+    def __init__(self):
+        super(Net_EarlyFusion, self).__init__()
+        # conv: 6*256*256   -->  64*256*256
+        self.conv1a = nn.Conv2d(3, 64, kernel_size=7, padding=3)
+        self.conv1a_bn = nn.BatchNorm2d(64)
+        self.conv1b = nn.Conv2d(3, 64, kernel_size=7, padding=3)
+        self.conv1b_bn = nn.BatchNorm2d(64)
         # max pool to 64*128*128
-        # conv: 64*128*128  -->  64*128*128
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        # fuse to 128*128*128
+        # conv: 128*128*128  -->  64*128*128
+        self.conv2 = nn.Conv2d(128, 64, kernel_size=3, padding=1)
         # Nov 25: Change Dropout to Batch normalization
         self.conv2_bn = nn.BatchNorm2d(64) # used to be: self.conv2_drop = nn.Dropout2d()
         # max pool to 64*64*64
@@ -47,9 +44,15 @@ class Net(nn.Module):
         self.fc1_bn = nn.BatchNorm1d(2048)
         self.fc2 = nn.Linear(2048, 109)
 
-    def forward(self, x):
+    def forward(self, mel, cqt):
+        xa = F.relu(F.max_pool2d(self.conv1a_bn(self.conv1a(mel)), 2))
+        xb = F.relu(F.max_pool2d(self.conv1b_bn(self.conv1b(cqt)), 2))
+        # print('xa.type:', type(xa))
+        # print('xa.shape:', xa.size())
+        x = torch.cat((xa, xb), 1) # concate along axis=1 since 0 is the batch axis
+        # print(x.data.shape)
         # print('in forward:')
-        x = F.relu(F.max_pool2d(self.conv1_bn(self.conv1(x)), 2))
+        # x = F.relu(F.max_pool2d(self.conv1_bn(self.conv1(x)), 2))
         # print(x.data.shape)
         x = F.relu(F.max_pool2d(self.conv2_bn(self.conv2(x)), 2))
         x = F.relu(F.max_pool2d(self.conv3_bn(self.conv3(x)), 2))

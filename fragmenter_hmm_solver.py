@@ -16,7 +16,7 @@ import sys
         array of length N
 '''
 
-debug = True
+debug = False
 def fragmented_solver(N, K, M, probabilities, bins,
         transitions=None, threshold=0.6):
     # Initialize CSP
@@ -40,7 +40,6 @@ def fragmented_solver(N, K, M, probabilities, bins,
         lastBin = solution[M-1]
         for _, v in solution.items():
             total_solution.append(v)
-        print (i)
 
     if remainder > 0:
         pitch_contour = PitchContour(threshold=threshold)

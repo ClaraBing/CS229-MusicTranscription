@@ -10,7 +10,6 @@ def print_config(args, cfg):
     print('save: dir: {:s} / prefix: {:s}'.format(cfg['save_dir'], cfg['save_prefix']))
 
 # Ref: https://github.com/pytorch/examples/blob/master/imagenet/main.py
-
 class AverageMeter(object):
     # Compute & store current & average value
     def __init__(self):
@@ -43,6 +42,21 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+def recall(output, target):
+    batch_size = target.size(0)
+    _, pred = output.topk(1, 1, True, True)
+    pred = pred.t()
+    true_pos = pred * target.view(1, -1).expand_as(pred)
+    true_neg = (1-pred) * (1 - target.view(1, -1).expand_as(pred))
+    n_pos = target.view(-1).float().sum(0, keepdim=True)
+    n_neg = (1-target).view(-1).float().sum(0, keepdim=True)
+
+    res_tp = true_pos[:1].view(-1).float().sum(0, keepdim=True)
+    res_tn = true_neg[:1].view(-1).float().sum(0, keepdim=True)
+    return res_tp*100.0/n_pos, res_tn*100.0/n_neg
+
+
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     torch.save(state, filename)

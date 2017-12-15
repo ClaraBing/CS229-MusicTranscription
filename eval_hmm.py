@@ -14,14 +14,14 @@ def getNumberOfHits(ground_truth, prediction, N):
     return numCorrect
 
 annotations_val = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/val/'
-val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/')
+val_set = PitchEstimationDataSet(annotations_val, '/root/data/val/', sr_ratio=1, audio_type="MIX")
 
 # Load CNN results from validation set
-filepath = "val.npy"
+filepath = "dataset/val_result_mtrx.npy"
 validation_inference = np.load(filepath)
 
 # Load trained Maximum Likelihood Estimates
-trained_mle = "transitions_mle.npy" # Path to saves parameters for HMM
+trained_mle = "dataset/transitions_mle.npy" # Path to saves parameters for HMM
 transitions = np.load(trained_mle).item()
 # Run inference on each song
 K = 5
@@ -49,9 +49,9 @@ for songID in range(val_set.numberOfSongs):
     print ("Solving CSP...")
     solution = pitch_contour.solve()
     # currentAccuracy = getNumberOfHits(val_set.pitches[songID], solution, N)
-    currentAccuracy, tmp = eval_accuracy(val_set.pitches[songID], solution, N)
+    currentAccuracy = getNumberOfHits(val_set.pitches[songID], solution, N)
     currentCnnOnlyAccuracy = getNumberOfHits(val_set.pitches[songID], bins[:, 0], N)
-    print ("With HMM: Accuracy rate on this song {:f} {:f}".format(currentAccuracy/N, tmp/N))
+    print ("With HMM: Accuracy rate on this song {:f}".format(currentAccuracy/N))
     print ("Without HMM: Accuracy rate on this song %f " % (currentCnnOnlyAccuracy/N))
     cnnOnlyAccuracy += currentCnnOnlyAccuracy
     totalAccuracy += currentAccuracy

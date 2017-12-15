@@ -2,16 +2,18 @@ import numpy as np
 from util import read_melody
 from pitch_contour import trainTransition
 import os 
+from config import *
 
+configuration = config_cqt()
 # load training annotations
-annotations_dir = '/root/MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/train/'
+annotations_dir = configuration['annot_folder']+'train/'
 
 melodies = []
 print ("Loading training data ...")
 for filename in os.listdir(annotations_dir):
     if filename.endswith(".csv"):
         audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
-        new_bin_melody, _ = read_melody(audioName, annotations_dir)
+        new_bin_melody, _ = read_melody(audioName, dir=annotations_dir, sr_ratio=2 * configuration['sr_ratio'])
         melodies.append(new_bin_melody)
         print ("Loaded annotations for "+ audioName)
 
@@ -21,7 +23,7 @@ print ("Finished loading data")
 
 # Maximum Likelihood estimates
 # store in outputFile
-outputFile = 'transitions_mle'
+outputFile = 'transitions_mle_'+str(configuration['sr_ratio'])
 print ("Training transitions ...")
 trainTransition(melodies, bins, outputFile, alpha=1)
 

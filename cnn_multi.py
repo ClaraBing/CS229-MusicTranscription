@@ -58,7 +58,7 @@ if args.cuda:
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 # Configuration
-cfg = config_1() # NOTE: change this if you want to use different configuration
+cfg = config_mixed() # NOTE: change this if you want to use different configuration
 # Fields in cfg:
 #   annot_folder: where the annotations are
 #   image_folder: where the spectrograms are
@@ -140,14 +140,21 @@ def validate(data_loader, model, criterion, outfile=None):
 
         # compute output
         output = model(data)
+        pos_prob = output.data * target.data
+        neg_prob = output.data * (1-target.data)
+        print('pos_prob shape: ', pos_prob.shape)
+        print('neg_prob_shape: ', neg_prob.shape)
+        out_mtrx[batch_idx, :, 0] = pos_prob.view(-1).cpu().numpy()
+        out_mtrx[batch_idx, :, 1] = neg_prob.view(-1).cpu().numpy()
         # performance measure: loss & top 1/5 accuracy
-        loss = criterion(output, target)
-        losses.update(loss.data[0], data.size(0))
+        """
+        loss = criterion(output, target) # TODO: uncomment when training
+        losses.update(loss.data[0], data.size(0)) # TODO: uncomment when training
         # Save probabilities & corresponding pitch bins
         probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
         out_mtrx[batch_idx, :, 0] = probs.view(-1).cpu().numpy()
         out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
-
+        """
 
         batch_time.update(time() - batch_start)
         
@@ -266,5 +273,5 @@ if __name__ == '__main__':
         model.load_state_dict(pretrained_dict)
         model.cuda()
         # Get features
-        visualise_features(train_loader, model, criterion, outfile_features='train_features_mtrx.npy', outfile_annotations='train_features_annotations.npy')
-        #validate(train_loader, model, criterion, outfile='train_result_mtrx.npy')
+        # visualise_features(train_loader, model, criterion, outfile_features='train_features_mtrx.npy', outfile_annotations='train_features_annotations.npy')
+        validate(val_loader, model, criterion, outfile='val_result_mtrx_multi.npy')

@@ -9,7 +9,7 @@ import numpy as np
 import os, math
 from collections import Counter
 
-global_sr_ratio = 1
+global_sr_ratio = 6
 
 # Function list:
 
@@ -120,6 +120,7 @@ def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_An
     csv_file = dir+folder_name + ("_MELODY3.csv" if multiple else '_MELODY1.csv')
     pitch_bin_list = []
     pitch_freq_list = []
+    hasNote = []
     with open(csv_file) as f:
         reader = csv.DictReader(f)
         # for count in range(0, len(reader), sr_ratio):
@@ -137,17 +138,11 @@ def read_melody_avg(folder_name, dir="../MedleyDB_selected/Annotations/Melody_An
             # freq_queue += float(list(row.values())[0]),
             if (count-1) % sr_ratio:
               continue
-            # print(row)
-            # newFreq = sum(freq_queue) / len(freq_queue)
             pitch_bin_list.append(Counter(bin_queue).most_common(1)[0][0]) # TODO: append most common elem
+            hasNote.append(0 if Counter(bin_queue).most_common(1)[0][0] == 0 else 1)
             bin_queue = []
-            # Note: comparing float 0.0 to 0 results in **False**
-            # if newFreq > 0:
-            #     pitch_bin_list.append(getBinFromFrequency(newFreq))
-            # else:
-            #     pitch_bin_list.append(0)
             pitch_freq_list.append(newFreq)
-    return pitch_bin_list, pitch_freq_list
+    return pitch_bin_list, pitch_freq_list, hasNote
 
 # read melodies in vector form for LSTM
 def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=2*global_sr_ratio, multiple=False):
@@ -167,8 +162,8 @@ def read_melodies(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Anno
             # print(row)
             newFreq = [float(x) for x in list(row.values())]
             newFreqBin = [getBinFromFrequency(x) for x in newFreq]
-            bin_vec = [1 if i in newFreqBin else 0 for i in range(109)] # binary vector of size 109: bin_vec[i]=1 if i is a note present in the current segment
-            # Note: comparing float 0.0 to 0 results in **False**
+            bin_vec = [1 if i in newFreqBin else 0 for i in range(1, 109)] # empty note is represented by 0 vector
+            # previous version: binary vector of size 109: bin_vec[i]=1 if i is a note present in the current segment
             pitch_bin_list.append(bin_vec)
             pitch_freq_list.append(newFreq)
             count+=1
@@ -275,10 +270,10 @@ def smooth(x,window_len=11,window='hanning'):
 def data_gen_wrapper():
     # raw_list = open('/root/new_data/raw_list.txt', 'r').readlines()
     # outDir = '/root/new_data/orig/'
-    outDir_base = '/root/new_data/context6/image/'
+    outDir_base = '/root/new_data/context46/cqt_image/'
     for mode in ['train', 'val', 'test']:
       outDir = outDir_base + mode + '/'
-      for line in open('/root/new_data/context6/'+mode+'.txt', 'r').readlines():
+      for line in open('/root/new_data/context46/'+mode+'.txt', 'r').readlines():
         # TODO
         path = '/root/new_data/context46/audio/' +mode + '/' + line.strip()
         if 'RAW' in path:
@@ -290,16 +285,16 @@ def data_gen_wrapper():
         else:
           # MIX
           # e.g. path = '.../new_data/mixed_context46/audio/AlexanderRoss_GoodbyeBolero_MIX.wav'
-          data_dir = '/root/new_data/context46/audio/'
+          data_dir = '/root/new_data/mixed_context46/audio/'
           audioName = line.strip()[:-4]
           curr_outDir = outDir + audioName[:-4]
         fext = 'wav'
         print(curr_outDir)
         os.mkdir(curr_outDir)
-        wav2spec_data(data_dir, audioName, fext, curr_outDir)
+        wav2spec_data_cqt(data_dir, audioName, fext, curr_outDir)
 
 def wav2spec_data(data_dir, audioName, fext, outDir):
-# Generate time slices of spectrogram, which will be used for CNN training
+# Generate time slices of mel spectrogram, which will be used for CNN training
 # Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
     sr = 44100 # sampling rate
     y, sr = librosa.load(data_dir+audioName+'.'+fext, sr=sr)
@@ -315,23 +310,46 @@ def wav2spec_data(data_dir, audioName, fext, outDir):
         plt.savefig('{:s}/spec_{:s}_{:d}.png'.format(outDir, audioName, int(i/global_sr_ratio)))
         plt.close()
 
+def wav2spec_data_cqt(data_dir, audioName, fext, outDir):
+# Generate time slices of mel spectrogram, which will be used for CNN training
+# Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
+    sr = 44100 # sampling rate
+    y, sr = librosa.load(data_dir+audioName+'.'+fext, sr=sr)
+    C = librosa.cqt(y=y, sr=sr)
+    spec = librosa.amplitude_to_db(C, ref=np.max)
+
+    for i in range(0, spec.shape[1], global_sr_ratio):
+        plt.figure(figsize=(2.56, 2.56)) # 256 * 256 pixels
+        plt.subplot(111)
+        librosa.display.specshow(spec[:, i:i+global_sr_ratio], sr=sr)
+        plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+        plt.axis('off')
+        plt.savefig('{:s}/spec_{:s}_{:d}.png'.format(outDir, audioName, int(i/global_sr_ratio)))
+        plt.close()
 
 def wav2spec_demo(data_dir, audioName, fext, outDir):
-# Generate a spectrogram for the entire audio for demo
+# Generate a mel spectrogram for the entire audio for demo
 # Note: outDir needs to have a trailing '/': e.g. 'my_home/' rather than 'my_home'
     sr = 44100
     y, sr = librosa.load(data_dir+audioName+'.'+fext, sr=sr)
+    # mel
     S = librosa.feature.melspectrogram(y=y, sr=sr, fmax=8000, n_mels=256)
-    spec = librosa.power_to_db(S, ref=np.max)
+    spec_mel = librosa.power_to_db(S, ref=np.max)
+    # cqt
+    C = librosa.cqt(y=y, sr=sr)
+    spec_cqt = librosa.amplitude_to_db(C, ref=np.max)
 
-    plt.figure(figsize=(20, 4)) # 2000 * 400 pixels
-    plt.subplot(111)
-    librosa.display.specshow(spec, sr=sr, y_axis='mel', x_axis="time")
-    # display the legend: color vs db
-    plt.colorbar(format='%+2.0f dB')
-    plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
-    plt.savefig(outDir + 'spec_' + audioName + '.png')
-    plt.close()
+    spec = [spec_mel, spec_cqt]
+    for i,label in enumerate(['mel', 'cqt']):
+        plt.figure(figsize=(20, 4)) # 2000 * 400 pixels
+        plt.subplot(111)
+        librosa.display.specshow(spec[i], sr=sr, y_axis=label, x_axis="time")
+        # display the legend: color vs db
+        plt.colorbar(format='%+2.0f dB')
+        plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+        plt.title(label)
+        plt.savefig(outDir + 'spec_' + audioName + '_{:s}.png'.format(label))
+        plt.close()
 
 
 def result2input(infile, outfile):
