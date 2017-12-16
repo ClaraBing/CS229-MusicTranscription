@@ -43,7 +43,7 @@ def config_cqt():
     'multiple': False,
     'save_dir': './output_model/context46/cqt/',
     'save_prefix': 'model_conv5_cqt_train',
-    'use_pretrained': False, # whether or not to use a pretrained model
+    'use_pretrained': True, # whether or not to use a pretrained model
     'pretrained_path': '/root/CS229-MusicTranscription/output_model/context46/cqt/model_conv5_cqt_train_epoch7.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
   }
 
@@ -197,7 +197,9 @@ def config_mel_bin():
     'audio_type': 'RAW',
     'multiple': False,
     'save_dir': 'output_model/context46/conv5_bin/',
-    'save_prefix': 'model_conv5_bin_mel_train',
-    'use_pretrained': False, # whether or not to use a pretrained model
-    'pretrained_path': '/root/CS229-MusicTranscription/output_model/context46/conv5_bin/model_conv5_bin_mel_train_epoch10.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
+    'save_prefix': 'model_conv5_mel_train',
+    'use_pretrained': True, # whether or not to use a pretrained model
+    'pretrained_path': '/root/CS229-MusicTranscription/output_model/context46/model_conv5_train_epoch7.pt', # './output_model/context46/model_conv5_train_epoch10.pt',
+    'use_pretrained_bin': True, # this is not used though; main() should always load a pretrained bin classifier
+    'pretrained_bin_path': '/root/CS229-MusicTranscription/output_model/context46/conv5_bin/model_conv5_bin_mel_train_epoch1.pt',
   }

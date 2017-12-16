@@ -91,7 +91,7 @@ def getFrequencyFromBin(bin, base = 440.0):
 
 def read_melody(folder_name, dir="../MedleyDB_selected/Annotations/Melody_Annotations/MELODY1/", sr_ratio=2*global_sr_ratio, multiple=False):
 
-    csv_file = dir+folder_name + ("_MELODY3.csv" if multiple else '_MELODY1.csv')
+    csv_file = dir+folder_name + ("_MELODY3.csv" if not multiple else '_MELODY1.csv')
     pitch_bin_list = []
     pitch_freq_list = []
     with open(csv_file) as f:

@@ -42,7 +42,7 @@ for idx, dictionary in enumerate(val_loader):
 	acc = sum([int(abs(a-b)<10) for a,b in zip(out_pitch, tar_pitch)])
 	accuracies.append(float(acc/len(out_pitch)))
 	acc2 = sum([int(abs(a-b)<10) for a,b in zip(data_pitch, tar_pitch)])
-	print("accuracy:", float(acc/len(out_pitch)), float(acc/len(out_pitch)])
+	print("accuracy:", float(acc/len(out_pitch)), float(acc/len(out_pitch)))
 	if idx>5:
 		break
 print(accuracies)

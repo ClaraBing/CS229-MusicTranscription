@@ -15,12 +15,11 @@ from torch.utils.data import DataLoader
 from collections import Counter
 # our code
 from PitchEstimationDataSet import *
-from model import *
-from model_conv7 import *
-from model_conv3 import *
-from model_conv3_small_fc import *
-from model_multi import *
-from train_util import *
+from model.model import *
+from model.model_conv7 import *
+from model.model_conv3 import *
+from model.model_conv3_small_fc import *
+from util_cnn import *
 from config import *
 
 # Training settings
@@ -50,7 +49,7 @@ parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 parser.add_argument('--save-interval', type=int, default=5000, metavar='N',
                     help='how many batches to wait before saving the trained model')
-parser.add_argument('--config', type = str, default='mel_conv3_fc', help='which config to use, see config.py')
+parser.add_argument('--config', type = str, default='early_fusion', help='which config to use, see config.py')
 
 # NOTE: save_dir and save_prefix are moved to config.py
 
@@ -102,7 +101,7 @@ if True:
     training_set = PitchEstimationDataSet(cfg['annot_folder']+'train/', cfg['image_folder']+'train/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
     train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, **kwargs)
 
-if True:
+if False:
     # val
     val_set = PitchEstimationDataSet(cfg['annot_folder']+'val/', cfg['image_folder']+'val/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
     val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
@@ -126,8 +125,7 @@ def train(model, train_loader, criterion, epoch):
 
         optimizer.zero_grad()
         output = model(data)
-        loss = criterion(output, target) # F.nll_loss(output, target)
-        # avg_loss += loss
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()
 
@@ -150,12 +148,10 @@ def train(model, train_loader, criterion, epoch):
         if batch_idx % args.save_interval == 0:
             save_name = cfg['save_prefix'] + str(batch_idx) + '.pt'
             print('Saving model: ' + save_name)
-            # torch.save(model.state_dict(), args.save_dir+save_name)
-            # TODO: save also the optimizer (right now the lr can be found in the log)
             torch.save(model, cfg['save_dir']+save_name)
 
 
-def validate(data_loader, model, criterion, outfile=None):
+def validate(data_loader, model, criterion, outfile=None, breakEarly=False):
     out_mtrx = np.empty((len(data_loader), 109, 2))
 
     batch_time = AverageMeter()
@@ -167,7 +163,7 @@ def validate(data_loader, model, criterion, outfile=None):
     for batch_idx, dictionary in enumerate(data_loader):
         batch_start = time()
 
-        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor) # NOTE: may need to change back to LongTensor for single note
+        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
 
@@ -180,12 +176,9 @@ def validate(data_loader, model, criterion, outfile=None):
         top1.update(prec1[0], data.size(0))
         top5.update(prec5[0], data.size(0))
         # Save probabilities & corresponding pitch bins
-        probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
-        out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
-        out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
-            # prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
-            # for prob, pitch_bin in zip(prob_list, pitch_bin_list):
-                
+        # probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
+        # out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
+        # out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
 
 
         batch_time.update(time() - batch_start)
@@ -198,6 +191,8 @@ def validate(data_loader, model, criterion, outfile=None):
                   'Time: {:f}'.format(
                   batch_idx, losses.val, losses.avg, top1.val, top1.avg, top5.val, top5.avg, batch_time.avg))
             sys.stdout.flush()
+        if breakEarly:
+            break
 
     # overall average
     print('\n================\n'
@@ -237,32 +232,9 @@ def visualise_features(data_loader, model, criterion, outfile_features=None, out
           output = model.get_features(data)
           out_mtrx.append(output.data.cpu().numpy()[0])
           annotations.append(target.data[0])
-    print (out_mtrx.shape)    
     if outfile_features and outfile_annotations:
       np.save(outfile_features, np.array(out_mtrx))
       np.save(outfile_annotations, np.array(annotations))
-
-
-# TODO: check if validate() & test() calculate the same error;
-# If yes, merge the two functions
-def test(model, test_loader):
-    model.eval()
-    test_loss = 0
-    correct = 0
-    for data, target in test_loader:
-        data, target = Variable(data, volatile=True).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
-        pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
-        correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-
-    test_loss /= len(test_loader.dataset)
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
-
 
 
 if __name__ == '__main__':
@@ -298,13 +270,15 @@ if __name__ == '__main__':
           os.mkdir(cfg['save_dir'])
 
         # test validate before training in case it falls apart
-        # prec = validate(val_loader, model, criterion)
-        for epoch in range(1, args.epochs + 1):
-            print('\n\n###############\n'
-              '    Epoch {:d}'
-              '\n###############'.format(epoch))
-    
-            train(model, train_loader, criterion, epoch)
+        prec = validate(val_loader, model, criterion, breakEarly=True)
+        for epoch in range(args.epochs + 1):
+            if epoch > 0:
+                # use epoch=0 to check saving checkpoint
+                print('\n\n###############\n'
+                  '    Epoch {:d}'
+                  '\n###############'.format(epoch))
+        
+                train(model, train_loader, criterion, epoch)
     
             # validation
             prec = validate(val_loader, model, criterion)
@@ -318,17 +292,12 @@ if __name__ == '__main__':
             }, is_best, filename=cfg['save_dir']+cfg['save_prefix']+'_epoch{:d}.pt'.format(epoch))
     
             # update lr
-            if epoch<100:
-                # print('checking for avg loss')
-                # avg_loss = avg_loss / args.lr_interval
-                # if prev_avg_loss - avg_loss < 0.05:
-                if epoch in lr_update_interval:
-                    args.lr /= 10
-                    for param_group in optimizer.param_groups:
-                        print(param_group['lr'])
-                        param_group['lr'] = args.lr
-                    print('Update lr to ' + str(args.lr))
-                # prev_avg_loss, avg_loss = avg_loss, 0
+            if epoch in lr_update_interval:
+                args.lr /= 10
+                for param_group in optimizer.param_groups:
+                    print(param_group['lr'])
+                    param_group['lr'] = args.lr
+                print('Update lr to ' + str(args.lr))
             # update momentum
             if args.update_momentum and args.momentum < 0.9:
                 args.momentum += 0.1
@@ -346,5 +315,4 @@ if __name__ == '__main__':
           visualise_features(train_loader, model, criterion, outfile_features='dataset/' + cfg['save_prefix'] + '_features_mtrx.npy', 
               outfile_annotations='dataset/'+cfg['save_prefix']+'_features_annotations.npy')
         else:
-        # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-          validate(test_loader, model, criterion, outfile='dataset/test_result_mtrx_mel.npy')
+          validate(train_loader, model, criterion)

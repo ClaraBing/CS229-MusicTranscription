@@ -15,9 +15,9 @@ from torch.utils.data import DataLoader
 from collections import Counter
 # our code
 from PitchEstimationDataSet import *
-from model_early_fusion import *
-from model_late_fusion import *
-from train_util import *
+from model.model_early_fusion import *
+from model.model_late_fusion import *
+from util_cnn import *
 from config import *
 
 # Training settings
@@ -59,7 +59,7 @@ if args.cuda:
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 # Configuration
-cfg = config_early_fusion() # NOTE: change this if you want to use different configuration
+cfg = config_late_fusion() # NOTE: change this if you want to use different configuration
 # Fields in cfg:
 #   annot_folder: where the annotations are
 #   image_folder: where the spectrograms are
@@ -71,7 +71,7 @@ cfg = config_early_fusion() # NOTE: change this if you want to use different con
 #   use_pretrained: whether or not to use a pretrained model
 #   pretrained_path: path to the pretrained model
 
-if False:
+if True:
     # train
     training_set = PitchEstimationDataSet(cfg['annot_folder']+'train/', cfg['image_folder']+'train/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
     train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, **kwargs)
@@ -81,9 +81,10 @@ if False:
     val_set = PitchEstimationDataSet(cfg['annot_folder']+'val/', cfg['image_folder']+'val/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
     val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
 
-# test
-test_set = PitchEstimationDataSet(cfg['annot_folder']+'test/', cfg['image_folder']+'test/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
-test_loader = DataLoader(test_set, batch_size=1, shuffle=False, **kwargs)
+if False:
+    # test
+    test_set = PitchEstimationDataSet(cfg['annot_folder']+'test/', cfg['image_folder']+'test/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode=cfg['fusion_mode'])
+    test_loader = DataLoader(test_set, batch_size=1, shuffle=False, **kwargs)
 
 
 
@@ -95,14 +96,13 @@ def train(model, train_loader, criterion, epoch):
         mel = dictionary['mel']
         cqt = dictionary['cqt']
         target = dictionary['frequency']
-        mel, cqt, target = Variable(mel).type(torch.FloatTensor), Variable(cqt).type(torch.FloatTensor), Variable(target).type(torch.LongTensor) # NOTE: may need to change target back to LongTensor for single notes
+        mel, cqt, target = Variable(mel).type(torch.FloatTensor), Variable(cqt).type(torch.FloatTensor), Variable(target).type(torch.LongTensor)
         if args.cuda:
             mel, cqt, target = mel.cuda(), cqt.cuda(), target.cuda()
 
         optimizer.zero_grad()
         output = model(mel, cqt)
-        loss = criterion(output, target) # F.nll_loss(output, target)
-        # avg_loss += loss
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()
 
@@ -125,12 +125,10 @@ def train(model, train_loader, criterion, epoch):
         if batch_idx % args.save_interval == 0:
             save_name = cfg['save_prefix'] + str(batch_idx) + '.pt'
             print('Saving model: ' + save_name)
-            # torch.save(model.state_dict(), args.save_dir+save_name)
-            # TODO: save also the optimizer (right now the lr can be found in the log)
             torch.save(model, cfg['save_dir']+save_name)
 
 
-def validate(data_loader, model, criterion, outfile=None):
+def validate(data_loader, model, criterion, outfile=None, breakEarly=False):
     out_mtrx = np.empty((len(data_loader), 109, 2))
 
     batch_time = AverageMeter()
@@ -142,7 +140,7 @@ def validate(data_loader, model, criterion, outfile=None):
     for batch_idx, dictionary in enumerate(data_loader):
         batch_start = time()
 
-        mel, cqt, target = Variable(dictionary['mel'], volatile=True).type(torch.FloatTensor), Variable(dictionary['cqt'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor) # NOTE: may need to change back to LongTensor for single note
+        mel, cqt, target = Variable(dictionary['mel'], volatile=True).type(torch.FloatTensor), Variable(dictionary['cqt'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
         if args.cuda:
             mel, cqt, target = mel.cuda(), cqt.cuda(), target.cuda()
 
@@ -155,12 +153,9 @@ def validate(data_loader, model, criterion, outfile=None):
         top1.update(prec1[0], mel.size(0))
         top5.update(prec5[0], mel.size(0))
         # Save probabilities & corresponding pitch bins
-        probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
-        out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
-        out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
-            # prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
-            # for prob, pitch_bin in zip(prob_list, pitch_bin_list):
-                
+        # probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
+        # out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
+        # out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
 
 
         batch_time.update(time() - batch_start)
@@ -173,6 +168,8 @@ def validate(data_loader, model, criterion, outfile=None):
                   'Time: {:f}'.format(
                   batch_idx, losses.val, losses.avg, top1.val, top1.avg, top5.val, top5.avg, batch_time.avg))
             sys.stdout.flush()
+        if breakEarly:
+            break
 
     # overall average
     print('\n================\n'
@@ -219,13 +216,15 @@ if __name__ == '__main__':
           os.mkdir(cfg['save_dir'])
 
         # test validate before training in case it falls apart
-        # prec = validate(val_loader, model, criterion)
-        for epoch in range(1, args.epochs + 1):
-            print('\n\n###############\n'
-              '    Epoch {:d}'
-              '\n###############'.format(epoch))
-    
-            train(model, train_loader, criterion, epoch)
+        prec = validate(val_loader, model, criterion, breakEarly=True)
+        for epoch in range(args.epochs + 1):
+            if epoch > 0:
+                # use epoch=0 to check saving checkpoint
+                print('\n\n###############\n'
+                  '    Epoch {:d}'
+                  '\n###############'.format(epoch))
+        
+                train(model, train_loader, criterion, epoch)
     
             # validation
             prec = validate(val_loader, model, criterion)
@@ -239,17 +238,12 @@ if __name__ == '__main__':
             }, is_best, filename=cfg['save_dir']+cfg['save_prefix']+'_epoch{:d}.pt'.format(epoch))
     
             # update lr
-            if epoch<100:
-                # print('checking for avg loss')
-                # avg_loss = avg_loss / args.lr_interval
-                # if prev_avg_loss - avg_loss < 0.05:
-                if epoch in lr_update_interval:
-                    args.lr /= 10
-                    for param_group in optimizer.param_groups:
-                        print(param_group['lr'])
-                        param_group['lr'] = args.lr
-                    print('Update lr to ' + str(args.lr))
-                # prev_avg_loss, avg_loss = avg_loss, 0
+            if epoch in lr_update_interval:
+                args.lr /= 10
+                for param_group in optimizer.param_groups:
+                    print(param_group['lr'])
+                    param_group['lr'] = args.lr
+                print('Update lr to ' + str(args.lr))
             # update momentum
             if args.update_momentum and args.momentum < 0.9:
                 args.momentum += 0.1
@@ -264,5 +258,4 @@ if __name__ == '__main__':
         model.cuda()
         # Get features
         # visualise_features(train_loader, model, criterion, outfile_features='train_features_mtrx.npy', outfile_annotations='train_features_annotations.npy')
-        # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-        validate(test_loader, model, criterion, outfile='test_result_mtrx_early_fusion.npy')
+        validate(train_loader, model, criterion)

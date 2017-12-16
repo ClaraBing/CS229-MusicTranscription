@@ -16,7 +16,7 @@ import sys
         array of length N
 '''
 
-debug = False
+debug = True
 def fragmented_solver(N, K, M, probabilities, bins,
         transitions=None, threshold=0.6):
     # Initialize CSP
@@ -30,6 +30,8 @@ def fragmented_solver(N, K, M, probabilities, bins,
         print ("Pitch tracking on each fragment")
     sys.stdout.flush()
     for i in range(patches):
+        if debug:
+          print ("Fragment %d out of %d" % (i, patches))
         pitch_contour = PitchContour(threshold=threshold)
         pitch_contour.setTransitionProbability(
             lambda b1, b2: transitions[(b1, b2)])

@@ -1,3 +1,8 @@
+'''
+Future work: Multiple pitches at a time
+( Currently the training results are not satisfactory. )
+'''
+
 # utils
 from __future__ import print_function
 import argparse
@@ -15,8 +20,8 @@ from torch.utils.data import DataLoader
 from collections import Counter
 # our code
 from PitchEstimationDataSet import *
-from model_multi import *
-from train_util import *
+from model.model_multi import *
+from util_cnn import *
 from config import *
 
 # Training settings
@@ -69,23 +74,20 @@ cfg = config_mixed() # NOTE: change this if you want to use different configurat
 #   use_pretrained: whether or not to use a pretrained model
 #   pretrained_path: path to the pretrained model
 
-# train
-training_set = PitchEstimationDataSet(cfg['annot_folder']+'train/', cfg['image_folder']+'train/', sr_ratio=6, audio_type=cfg['audio_type'], multiple=cfg['multiple'])
-train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, **kwargs)
+if True:
+    # train
+    training_set = PitchEstimationDataSet(cfg['annot_folder']+'train/', cfg['image_folder']+'train/', sr_ratio=6, audio_type=cfg['audio_type'], multiple=cfg['multiple'])
+    train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, **kwargs)
 
-# val
-val_set = PitchEstimationDataSet(cfg['annot_folder']+'val/', cfg['image_folder']+'val/', sr_ratio=6, audio_type=cfg['audio_type'], multiple=cfg['multiple'])
-val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
-    # batch_size = args.batch_size, shuffle=False, **kwargs)
+if False:
+    # val
+    val_set = PitchEstimationDataSet(cfg['annot_folder']+'val/', cfg['image_folder']+'val/', sr_ratio=6, audio_type=cfg['audio_type'], multiple=cfg['multiple'])
+    val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
 
-# test
-# test_set = PitchEstimationDataSet(annot_folder+'test/', image_folder+'test/', transform=transforms.Compose([
-#                transforms.ToTensor(),
-#                transforms.Normalize((0.1307,), (0.3081,))
-#                ]))
-#test_set = PitchEstimationDataSet(annotations_test, annotations_folder + 'test', sr_ratio=2)
-#test_loader = DataLoader(test_set, shuffle=False, # do not shuffle: the original ordering is needed for matching w/ annotations (for HMM)
-#    batch_size = args.test_batch_size, **kwargs) # batch = 1
+if False:
+    # test
+    test_set = PitchEstimationDataSet(cfg['annot_folder']+'test/', cfg['image_folder']+'test/', sr_ratio=6, audio_type=cfg['audio_type'], multiple=cfg['multiple'])
+    test_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
 
 
 def train(model, train_loader, criterion, epoch):
@@ -117,8 +119,6 @@ def train(model, train_loader, criterion, epoch):
         if batch_idx % args.save_interval == 0:
             save_name = cfg['save_prefix'] + str(batch_idx) + '.pt'
             print('Saving model: ' + save_name)
-            # torch.save(model.state_dict(), args.save_dir+save_name)
-            # TODO: save also the optimizer (right now the lr can be found in the log)
             torch.save(model, cfg['save_dir']+save_name)
 
 
@@ -142,8 +142,6 @@ def validate(data_loader, model, criterion, outfile=None):
         output = model(data)
         pos_prob = output.data * target.data
         neg_prob = output.data * (1-target.data)
-        print('pos_prob shape: ', pos_prob.shape)
-        print('neg_prob_shape: ', neg_prob.shape)
         out_mtrx[batch_idx, :, 0] = pos_prob.view(-1).cpu().numpy()
         out_mtrx[batch_idx, :, 1] = neg_prob.view(-1).cpu().numpy()
         # performance measure: loss & top 1/5 accuracy
@@ -177,38 +175,6 @@ def validate(data_loader, model, criterion, outfile=None):
     return top1.avg
 
 
-
-def visualise_features(data_loader, model, criterion, outfile_features=None, outfile_annotations=None):
-    L = 50
-    out_mtrx = []
-    annotations = []
-    sampled_pitches = {}
-    model.eval()
-    for batch_idx, dictionary in enumerate(data_loader):
-        if len(sampled_pitches) > L * 20:
-          break
-        batch_start = time()
-        data, target = Variable(dictionary['image'], volatile=True).type(torch.FloatTensor), Variable(dictionary['frequency']).type(torch.LongTensor)
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        if target.data[0] not in sampled_pitches:
-          sampled_pitches[target.data[0]] = 1
-          # compute features
-          output = model.get_features(data)
-          out_mtrx.append(output.data.cpu().numpy()[0])
-          annotations.append(target.data[0])
-        elif sampled_pitches[target.data[0]] < L:
-          sampled_pitches[target.data[0]] += 1
-          # compute features
-          output = model.get_features(data)
-          out_mtrx.append(output.data.cpu().numpy()[0])
-          annotations.append(target.data[0])
-        # print (target.data[0], sampled_pitches[target.data[0]])
-        if outfile_features and outfile_annotations:
-          np.save(outfile_features, np.array(out_mtrx))
-          np.save(outfile_annotations, np.array(annotations))
-
-
 if __name__ == '__main__':
     model = Net_Multi()
     if args.cuda:
@@ -230,15 +196,17 @@ if __name__ == '__main__':
             model.cuda()
         if not os.path.exists(cfg['save_dir']):
           os.mkdir(cfg['save_dir'])
-        for epoch in range(1, args.epochs + 1):
-            print('\n\n###############\n'
-              '    Epoch {:d}'
-              '\n###############'.format(epoch))
-    
-            train(model, train_loader, criterion, epoch)
+        for epoch in range(args.epochs + 1):
+            if epoch > 0:
+                # use epoch=0 to check saving checkpoint
+                print('\n\n###############\n'
+                  '    Epoch {:d}'
+                  '\n###############'.format(epoch))
+        
+                train(model, train_loader, criterion, epoch)
     
             # validation
-            prec = validate(val_loader, model, criterion, 'val_result_epoch{:d}.npy'.format(epoch))
+            prec = validate(val_loader, model, criterion)
             is_best = prec > best_prec
             best_prec = max(prec, best_prec)
             save_checkpoint({
@@ -249,17 +217,12 @@ if __name__ == '__main__':
             }, is_best, filename=cfg['save_dir']+cfg['save_prefix']+'_epoch{:d}.pt'.format(epoch))
     
             # update lr
-            if epoch<100:
-                # print('checking for avg loss')
-                # avg_loss = avg_loss / args.lr_interval
-                # if prev_avg_loss - avg_loss < 0.05:
-                if epoch in lr_update_interval:
-                    args.lr /= 10
-                    for param_group in optimizer.param_groups:
-                        print(param_group['lr'])
-                        param_group['lr'] = args.lr
-                    print('Update lr to ' + str(args.lr))
-                # prev_avg_loss, avg_loss = avg_loss, 0
+            if epoch in lr_update_interval:
+                args.lr /= 10
+                for param_group in optimizer.param_groups:
+                    print(param_group['lr'])
+                    param_group['lr'] = args.lr
+                print('Update lr to ' + str(args.lr))
             # update momentum
             if args.update_momentum and args.momentum < 0.9:
                 args.momentum += 0.1
@@ -272,6 +235,4 @@ if __name__ == '__main__':
         pretrained_dict = torch.load(cfg['pretrained_path'])['state_dict']
         model.load_state_dict(pretrained_dict)
         model.cuda()
-        # Get features
-        # visualise_features(train_loader, model, criterion, outfile_features='train_features_mtrx.npy', outfile_annotations='train_features_annotations.npy')
-        validate(val_loader, model, criterion, outfile='val_result_mtrx_multi.npy')
+        validate(val_loader, model, criterion)

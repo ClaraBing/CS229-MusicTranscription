@@ -4,6 +4,8 @@ midiOutput/
 output_model*/
 pitch_plots/
 spec_examples/
+results/
+deprecated/
 *.pyc
 *.log
 *.err

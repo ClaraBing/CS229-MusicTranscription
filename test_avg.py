@@ -35,7 +35,7 @@ parser.add_argument('--config', type = str, default='avg', help='which config to
 # NOTE: save_dir and save_prefix are moved to config.py
 
 args = parser.parse_args()
-args.cuda = not args.no_cuda and torch.cuda.is_available()
+args.cuda = True #  not args.no_cuda and torch.cuda.is_available()
 
 torch.manual_seed(args.seed)
 if args.cuda:
@@ -75,6 +75,10 @@ print ("Using configuration %s" % args.config)
 #   use_pretrained: whether or not to use a pretrained model
 #   pretrained_path: path to the pretrained model
 
+# train
+train_set = PitchEstimationDataSet(cfg['annot_folder']+'train/', cfg['image_folder']+'train/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode='late_fusion')
+train_loader = DataLoader(train_set, batch_size=1, shuffle=False, **kwargs)
+
 # val
 val_set = PitchEstimationDataSet(cfg['annot_folder']+'val/', cfg['image_folder']+'val/', sr_ratio=cfg['sr_ratio'], audio_type=cfg['audio_type'], multiple=cfg['multiple'], fusion_mode='late_fusion')
 val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
@@ -113,8 +117,8 @@ def validate_avg(data_loader, model_mel, model_cqt, criterion, outfile=None):
         top5.update(prec5[0], mel.size(0))
         # Save probabilities & corresponding pitch bins
         probs, pitch_bins = torch.sort(output.data, 1, True) # params: data, axis, descending
-        out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
-        out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
+        # out_mtrx[batch_idx, :, 0] = np.exp(probs.view(-1).cpu().numpy())
+        # out_mtrx[batch_idx, :, 1] = pitch_bins.view(-1).cpu().numpy()
             # prob_list, pitch_bin_list = list(probs.view(-1)), list(pitch_bins.view(-1)) 
             # for prob, pitch_bin in zip(prob_list, pitch_bin_list):
                 
@@ -150,8 +154,8 @@ if __name__ == '__main__':
     if args.cuda:
         model_mel.cuda()
         model_cqt.cuda()
-    print_config(args, cfg)
-    model_mel.print_archi()
+    # print_config(args, cfg)
+    # model_mel.print_archi()
 
     # input / target are floats
     criterion = F.nll_loss
@@ -168,4 +172,5 @@ if __name__ == '__main__':
           outfile_annotations='dataset/'+cfg['save_prefix']+'_features_annotations.npy')
     else:
     # Note: "def test" has not been tested; please use "def validate" for now: the two may be merged in the futuer)
-      validate_avg(test_loader, model_mel, model_cqt, criterion, outfile='dataset/test_result_mtrx_avg.npy')
+      validate_avg(train_loader, model_mel, model_cqt, criterion) #, outfile='dataset/test_result_mtrx_avg.npy')
+      validate_avg(val_loader, model_mel, model_cqt, criterion)

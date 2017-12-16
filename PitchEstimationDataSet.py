@@ -5,7 +5,7 @@ import os
 import torch
 import numpy as np
 from torchvision import transforms, utils
-from util import read_melody_avg, read_melodies
+from util import read_melody_avg, read_melody
 from torch.utils.data import Dataset
 from collections import Counter
 import sys
@@ -44,22 +44,22 @@ class PitchEstimationDataSet(Dataset):
                 audioName = filename[:filename.find('MELODY')-1] # remove the trailing '_MELODY1.csv'
                 self.songNames.append(audioName)
                 if self.multiple:
-                    new_bin_melody, _ = read_melodies(audioName, annotations_dir, sr_ratio=2*self.sr_ratio, multiple=self.multiple)
+                    new_bin_melody, _ = read_melody(audioName, annotations_dir, sr_ratio=self.sr_ratio, multiple=self.multiple)
                 else:
                     new_bin_melody, _, new_hasNote = read_melody_avg(audioName, annotations_dir, sr_ratio=2*self.sr_ratio, multiple=self.multiple) # len(new_bin_melody) denotes the length of a song
+                    self.hasNote.append(new_hasNote)
                 # sanity check: if not enough images (e.g. may differ by ~10), chop the gt pitches
-                for pid in range(len(new_bin_melody)):
-                    img_name = os.path.join(self.images_dir, audioName+"/spec_"+audioName+"_{:s}_".format(self.audio_type)+str(pid)+".png")
-                    if not os.path.exists(img_name):
-                        print('Chopped {:s} to {:d} ({:d} shorted)'.format(img_name, pid, len(new_bin_melody)-pid))
-                        new_bin_melody = new_bin_melody[:pid]
-                        invalid_path_cnt += 1
-                        break
+                    for pid in range(len(new_bin_melody)):
+                        img_name = os.path.join(self.images_dir, audioName+"/spec_"+audioName+"_{:s}_".format(self.audio_type)+str(pid)+".png")
+                        if not os.path.exists(img_name):
+                            print('Chopped {:s} to {:d} ({:d} shorted)'.format(img_name, pid, len(new_bin_melody)-pid))
+                            new_bin_melody = new_bin_melody[:pid]
+                            invalid_path_cnt += 1
+                            break
                 self.lengths.append(len(new_bin_melody)+ self.currentCount)
                 self.songLengths.append(len(new_bin_melody))
                 self.currentCount += len(new_bin_melody)
                 self.pitches.append(new_bin_melody)
-                self.hasNote.append(new_hasNote)
 
         print('Class count from PitchEstimationDataSet (total={:d} / invalid={:d}):'.format(sum([len(pitches) for pitches in self.pitches]), invalid_path_cnt))
         if not self.multiple:

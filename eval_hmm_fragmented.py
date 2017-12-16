@@ -17,8 +17,8 @@ This launches the evaluation on the validation dataset with a threshold of 0.6 a
 
 # Evaluation settings
 parser = argparse.ArgumentParser(description='HMM evaluation')
-parser.add_argument('--M', type=float,
-                    help='Size of chunks for fragmented solver (0.5 means two chunks with half the size)')
+parser.add_argument('--M', type=int,
+                    help='Size of chunks for fragmented solver')
 parser.add_argument('--threshold', type=float,
                     help='threshold to be used for the HMM solver')
 parser.add_argument('--mle', type=str, default='transitions_mle.npy',
@@ -104,20 +104,23 @@ for songID in range(len(val_set.songNames)):
     start = time()
     songName = val_set.songNames[songID]
     print ("Evaluating for " + songName)
-    N = val_set.songLengths[songID]
+    N = val_set.songLengths[songID] - 1
     probabilities = np.zeros((N, K))
     bins = np.zeros((N, K))
     print ("Loading for %d notes" % N)
+    print (offset, offset + N)
     for i in range(N):
         probabilities[i] = validation_inference[i + offset][:K][:,0]
         probabilities[i] /= np.sum(probabilities[i])
         bins[i] = validation_inference[i + offset][:K][:,1]
     offset += N
-    chunksizes = max(0, int(M * N))
-    solution = fragmented_solver(N, K, chunksizes, probabilities, bins, transitions, threshold)
+    if M == 0:
+      fragment = N
+    else:
+      fragment = M
+    solution = fragmented_solver(N, K, fragment, probabilities, bins, transitions, threshold)
     currentAccuracy, currentCnnOnlyAccuracy, confirmAcc, fixAcc, breakAcc \
         = getNumberOfHits(val_set.pitches[songID], solution, N, probabilities, bins[:, 0])
-    # currentCnnOnlyAccuracy, _ = getNumberOfHits(val_set.pitches[songID], bins[:, 0], N)
     cnnOnlyAccuracy += currentCnnOnlyAccuracy
     totalAccuracy += currentAccuracy
     totalFix += fixAcc
