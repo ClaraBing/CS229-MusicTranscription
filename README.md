@@ -1,16 +1,22 @@
 # Automatic Melody Transcription
 Automatic melody transcription for multitrack (monophonic) audios. An input audio (`.wav`) is first segmented to short time intervals and transformed to corresponding spectrograms, on which a CNN is run to estimate the probabilities of a pitch present. Finally, with the estimated pitches as inputs, a Hidden Markov Model produces one or more most probable melodies.
 
-# To-Do
-* Unbalanced class: add weight to loss function
-* Multiclass / polyphonic
-  * running on conv5 (experiment with the smaller model since the performance gain from conv7 is small)
-* Data augmentation
-  * changing volume: not applicable
-  * adding noise
-* More features
-  * Q-transformation: 1.7% increase as for the first epoch
-  * max spacing to help determine foundamental frequency
+# Main files
+* `librosa_baseline.py`: baseline using the `librosa` library.
+* `PitchEstimationDataSet.py`: for loading dataset.
+* CNNs: `cnn.py` is the plain CNN; `cnn_fusion.py` is for early/late fusion; `cnn_bin.py` and `cnn_multi.py` are still in progress.
+  * Use `config.py` to specify your configuration.
+  * Models are specified under `model/`
+* LSTM: `lstm_eval.py` is for training the LSTM; `lstm_test.py` is for testing.
+* HMM: `eval_hmm.py` is the plain HMM on the entire song; `eval_hmm_fragmented.py` applies HMM no various lengths of audio segments; `eval_hmm_laplacian.py` was an early experiment using the Laplacian model.
+* Error analysis:
+  * `feature_visualisation.py`: PCA + t-SNE
+  * `plot_cnf.py`: confusion matrix
+* Util functions:
+  * `util.py`: various util functions; there is a list of functions at the beginning of the file
+  * `util_cnn.py`: util functions for CNN
+  * MIDI file: `generate_midi_files.py`
+
 
 # Dependencies 
 The project depends on the following packages 
@@ -142,10 +148,23 @@ MIDI file generated from our inference pipeline for the same audio input
 * **Computer-aided Melody Note Transcription Using the Tony Software: Accuracy and Efficiency** by M. Mauch and C. Cannam and R. Bittner and G. Fazekas and J. Salamon and J. Dai and J. Bello and S. Dixon, 2015.
 * **Evaluation of pitch estimation in noisy speech for application in non-intrusive speech quality assessment** by D. Sharma and P. A. Naylor, 2009.
 
+# To-Do
+* Unbalanced class: 
+  * treat as a detection problem: still training; code in `cnn_bin.py`
+  * add weight to loss function
+* Multiclass / polyphonic
+  * training using `cnn_multi.py`
+  * running on conv5 (experiment with the smaller model since the performance gain from conv7 is small)
+* Data augmentation
+  * adding noise
+  * changing volume: not applicable since it is normalized
+* More features
+  * max spacing to help determine foundamental frequency
 
 ## Log for finished to-dos
 * Longer context for data (46ms)
   * more data: 34 -> 60 songs
+* Use Q-transformation for more features: 1.7% increase as for the first epoch
 * Deeper network
   * 7 conv layers + same FCs: ~2x model size (3574 vs 7561); slightly better results.
 * LSTM for part 2
