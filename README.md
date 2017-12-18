@@ -2,17 +2,17 @@
 Automatic melody transcription for multitrack (monophonic) audios. An input audio (`.wav`) is first segmented to short time intervals and transformed to corresponding spectrograms, on which a CNN is run to estimate the probabilities of a pitch present. Finally, with the estimated pitches as inputs, a Hidden Markov Model produces one or more most probable melodies.
 
 # Main files
-* `librosa_baseline.py`: baseline using the `librosa` library.
-* `PitchEstimationDataSet.py`: for loading dataset.
-* CNNs: `cnn.py` is the plain CNN; `cnn_fusion.py` is for early/late fusion; `cnn_bin.py` and `cnn_multi.py` are still in progress.
+* **Baseline**: `librosa_baseline.py` using the `librosa` library.
+* **Dataset**: `PitchEstimationDataSet.py` for loading dataset; spectrograms are generated using functions `wav2spec_*` in `utils.py`.
+* **CNNs**: `cnn.py` is the plain CNN; `cnn_fusion.py` is for early/late fusion; `cnn_bin.py` and `cnn_multi.py` are still in progress.
   * Use `config.py` to specify your configuration.
   * Models are specified under `model/`
-* LSTM: `lstm_eval.py` is for training the LSTM; `lstm_test.py` is for testing.
-* HMM: `eval_hmm.py` is the plain HMM on the entire song; `eval_hmm_fragmented.py` applies HMM no various lengths of audio segments; `eval_hmm_laplacian.py` was an early experiment using the Laplacian model.
-* Error analysis:
+* **LSTM**: `lstm_eval.py` is for training the LSTM; `lstm_test.py` is for testing.
+* **HMM**: `eval_hmm.py` is the plain HMM on the entire song; `eval_hmm_fragmented.py` applies HMM no various lengths of audio segments; `eval_hmm_laplacian.py` was an early experiment using the Laplacian model.
+* **Error analysis**:
   * `feature_visualisation.py`: PCA + t-SNE
   * `plot_cnf.py`: confusion matrix
-* Util functions:
+* **Util functions**:
   * `util.py`: various util functions; there is a list of functions at the beginning of the file
   * `util_cnn.py`: util functions for CNN
   * MIDI file: `generate_midi_files.py`
